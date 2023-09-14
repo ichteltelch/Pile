@@ -1405,15 +1405,7 @@ implements Pile<E>, HasAssociations.Mixin
 				}
 				outer.__thisNeedsDeepRevalidate(needDeepRevalidate);
 			}
-			//			if("matrixHole".equals(outer.avName)) {
-			//				MutBool found = new MutBool();
-			//				outer.giveDependencies(d->{
-			//					if("matrixHoleWithoutCheckHole".equals(d.dependencyName()))
-			//						found.val=true;
-			//				});
-			//				if(!found.val)
-			//					System.out.println();
-			//			}
+
 		}
 		@Override
 		public void enterDelayedMode() {

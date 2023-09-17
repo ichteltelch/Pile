@@ -68,7 +68,7 @@ public class DebugEnabled {
 	 * (using the {@link ThreadLocal} integer {@link #lockedValueMutices}) so that problematic operation
 	 * can log a warning while run while mutices are locked in the same thread.
 	 */
-	public static final boolean COUNT_BRACKET_LOCKS = !true;
+	public static final boolean COUNT_BRACKET_LOCKS = false;
 	/**
 	 * {@link ValueBracket}s are 
 	 * {@linkplain ValueBracket#queued(pile.utils.SequentialQueue) 
@@ -78,12 +78,12 @@ public class DebugEnabled {
      * This flag enables logging a warning if an attempt is made to 
      * destroy a {@link PileImpl} or {@link Independent} while mutices are locked in the same thread.
 	 */
-	public static final boolean WARN_ON_DESTROY_WHILE_LOCKED = !true;
+	public static final boolean WARN_ON_DESTROY_WHILE_LOCKED = true;
 	
 	/**
 	 * Rename threads for the duration of them performing a {@link Recomputation}.
 	 */
-	public static final boolean RENAME_RECOMPUTATION_THREADS = true;
+	public static final boolean RENAME_RECOMPUTATION_THREADS = false;
 
 	/**
 	 * Log a warning together with a synthetic exception to provide a stack trace.

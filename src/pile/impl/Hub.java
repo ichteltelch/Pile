@@ -2,10 +2,9 @@ package pile.impl;
 
 import java.util.function.BiPredicate;
 
-import javax.xml.bind.ValidationEvent;
-
 import pile.aspect.Dependency;
 import pile.aspect.listen.ListenValue;
+import pile.aspect.listen.ValueEvent;
 import pile.aspect.listen.ValueListener;
 
 /**
@@ -75,7 +74,7 @@ public class Hub extends PileImpl<Object>{
 	 * Make a new {@link Hub}
 	 * @param value The value that the {@link Hub} should always take when it is valid.
 	 * Default value is {@code "Hub"}
-	 * @param deep A "deep" {@link Hub} forwards {@link ValidationEvent}s from its
+	 * @param deep A "deep" {@link Hub} forwards {@link ValueEvent}s from its
 	 * {@link Dependency Dependencies} if they are also {@link ListenValue}s.
 	 * @param deps Things the {@link Hub} should initially depend on.
 	 */

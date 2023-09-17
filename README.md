@@ -1,7 +1,7 @@
 # Pile
 A framework for reactive values.
 
-In the context of this framework, reactive values are wrappers around plain values that offer some extra funcionality,
+In the context of this framework, reactive values are wrappers around plain values that offer some extra functionality,
 foremost the ability to depend on other reactive values so that they can recompute themselves when the dependencies change.
 
 ## Feature overview

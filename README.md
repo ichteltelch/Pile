@@ -1,8 +1,53 @@
 # Pile
 A framework for reactive values.
 
-In the context of this framework, reactive values are wrappers around plain values that offer some extra functionality,
+In the context of this framework, [reactive values](https://en.wikipedia.org/wiki/Reactive_programming)
+are wrappers around plain values that offer some extra functionality,
 foremost the ability to depend on other reactive values so that they can recompute themselves when the dependencies change.
+
+## Unleash the Power of Responsiveness
+
+Reactive programming is the key to building applications that respond dynamically to changing data and user interactions. It's the secret behind real-time dashboards, interactive user interfaces, and systems that adapt on the fly. This paradigm has found applications in various domains, including:
+
+1. User Interfaces: Craft responsive and interactive user interfaces that update instantly as user inputs and data streams change.
+
+2. Data Processing: Handle streams of data, like sensor readings or financial market updates, by reacting to new information as it arrives.
+
+3. Computational Workflows: Create complex calculations that automatically update when input data or parameters change, reducing manual intervention.
+
+4. System Monitoring: Build monitoring and alerting systems that instantly detect anomalies and respond to critical events.
+
+This is where *Pile* comes in. *Pile* is a Java 8 framework designed to simplify and enhance reactive programming. It enables you to create dynamic, interdependent data structures that adapt in real-time. With features like dynamic dependencies, optionally delayed, suspendable or lazy recomputation, and redirection of write attempts, *Pile* empowers developers to craft highly responsive applications with ease. The extensible interface hierarchy allows for providing interoperable custom implementations, but considering the extensive set of utility and convenience methods and the the general purpose implementations that are highly customizable using lambdas, this need may not even arise.
+
+Explore the capabilities of *Pile*, extensively documented using Javadoc comments, and unlock the full potential of reactive programming in your projects. Whether you're designing cutting-edge user interfaces or complex data-driven workflows, *Pile* provides the tools you need to build applications that thrive in the world of dynamic data and user interactions.
+
+Here's why you should consider using *Pile* in your projects:
+
+1. Basic Reactivity: *Pile* allows reactive values to depend on each other, automatically recalculating when dependencies change. Whether you need real-time updates, data validation, or complex calculations, *Pile* has you covered.
+
+1. Dynamic Dependencies: *Pile* lets your reactive values adapt intelligently by recording and reacting to dynamic dependencies. This ensures efficient and precise updates, enhancing the responsiveness of your applications.
+
+4. Sealing: Secure your data or react flexibly to write access with *Pile*'s sealing feature. You can prohibit or redirect write attempts, ensuring integrity and enabling more complicated data relations than mere unidirectional dependency.
+
+2. Suppress Automatic Behavior: You can flexibly suspend certain automatic behaviors at times when they are unwanted or would be wasteful, such as automatic revalidation, or the memorizing of previously set values of settings.
+
+2. Observability: Easily observe changes in your data with either synchronous or rate-limited listeners, for interactions with the world outside of *Pile*'s dependency graph. *Pile* makes it straightforward to track and respond to value changes, ensuring your applications remain up-to-date. 
+
+6. Flexible Utility Methods: Access a rich set of utility methods to create, transform, and aggregate reactive values effortlessly. *Pile* simplifies common tasks, saving you time and effort.
+
+5. Partial Dependency Updates: When loading data from external sources, *Pile* allows you to manually set parts of the dependency graph while having the rest automatically recomputed. This flexibility simplifies data integration and reduces bandwidth and storage demands.
+
+3. Customizability: Tailor your reactive system to your exact needs. *Pile* offers high customizability, allowing you to fine-tune reactivity according to your application's unique requirements.
+
+7. Minimal Code Dependencies: *Pile* has minimal external dependencies, making it lightweight and easy to integrate into your projects.
+
+5. Debugging Support: Simplify debugging with detailed logging and tracing features. *Pile* helps you pinpoint issues and optimize your application's behavior.
+
+
+
+Whether you're building user interfaces, managing real-time data streams, or solving complex computational problems, *Pile* empowers you to create responsive and efficient applications. Explore the capabilities of *Pile* and elevate your reactive programming experience.
+
+*This cheesy introduction was powered by ChatGPT. Please accept my apologies.*
 
 ## Feature overview
 Here's an overview of the features offered by the *Pile* framework, with pointers to further documentation and relevant parts of the codebase.

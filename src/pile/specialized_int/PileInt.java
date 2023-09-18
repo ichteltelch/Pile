@@ -584,7 +584,7 @@ extends Depender, ReadWriteListenDependencyInt, PileComparable<Integer>{
 		return binOp(op1, op2, (Integer a, Integer b)->{
 			if(a==null || b==null)
 				return null;
-			return a-b;		
+			return a*b;		
 		});
 	}
 	/**

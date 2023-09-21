@@ -320,6 +320,33 @@ implements Iterable<E>{
 		}
 	}
 	/**
+	 * Remove the first element that fulfills the given {@link Predicate}
+	 * @param e
+	 */
+	public int indexOfFirst(Predicate<? super E> e) {
+		int index = 0;
+		for(Iterator<E> it=iterator(); it.hasNext(); ) {
+			if(e.test(it.next())) {
+				return index;
+			}
+			++index;
+		}
+		return -1;
+	}
+	/**
+	 * Remove the first element that fulfills the given {@link Predicate}
+	 * @param e
+	 */
+	public E getFirst(Predicate<? super E> e) {
+		for(Iterator<E> it=iterator(); it.hasNext(); ) {
+			E v = it.next();
+			if(e.test(v)) {
+				return v;
+			}
+		}
+		return null;
+	}
+	/**
 	 * Make an Iterator that iterates over the values in this list. {@link Iterator#remove()} is supported.
 	 */
 	@Override

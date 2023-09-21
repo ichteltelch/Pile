@@ -1720,16 +1720,17 @@ ListenValue.Managed{
 
 	@Override
 	public void await(WaitService ws, BooleanSupplier c) throws InterruptedException {
-		synchronized (mutex) {
-			while(!c.getAsBoolean())
+		while(!c.getAsBoolean()) {
+			synchronized (mutex) {
 				ws.wait(mutex, 1000);
+			}
 		}
 	}
 	@Override
 	public boolean await(WaitService ws, BooleanSupplier c, long millis) throws InterruptedException {
 		long t0 = System.currentTimeMillis();
-		synchronized (mutex) {
-			while(!c.getAsBoolean()) {
+		while(!c.getAsBoolean()) {
+			synchronized (mutex) {
 				long left = millis - (System.currentTimeMillis()-t0);
 				if(left<=0)
 					return false;

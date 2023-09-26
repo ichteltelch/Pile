@@ -172,7 +172,7 @@ public class Nonreentrant{
 	 */
 	public MockBlock block() throws ReentrantException {
 		Boolean isIn = in.get();
-		if(isIn)
+		if(Boolean.TRUE.equals(isIn))
 			throw new ReentrantException();
 		MockBlock block = MockBlock.closeOnly(()->in.set(false));
 		boolean success = false;

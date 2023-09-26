@@ -73,8 +73,8 @@ public interface ReadWriteDependency<E> extends ReadWriteValue<E>, ReadDependenc
 	 * {@link ReadWriteDependency} when the {@link #set(Object) set()}-method of {@code v} has been called, 
 	 * the value of this {@link ReadWriteDependency} will be mapped through the bijection 
 	 * and compared to the value that has originally been set; in case of disagreement, 
-	 * {@code v} will be set again with the former value. All this happens while both v and 
-	 * this {@link ReadWriteDependency} are in a transaction.
+	 * {@code v} will be set again with the former value. All this happens while {@code v}
+	 * is in a transaction.
 	 * All This is needed if there are non-trivial corrections in play
 
 	 * @return
@@ -85,15 +85,19 @@ public interface ReadWriteDependency<E> extends ReadWriteValue<E>, ReadDependenc
 			boolean reentryGuard, BiPredicate<? super F, ? super F> consistenyCheck){
 		Consumer<? super F> setter = v.makeSetter();
 		Consumer<? super F> interceptor = value->{
-			try(Suppressor ta=transaction(); Suppressor vta=v.transaction()){
-				setter.accept(value);
-				set(mapFunction.applyInverse(value));
+			try(Suppressor vta=v.transaction()){
+				try(Suppressor ta=transaction()){
+					setter.accept(value);
+					set(mapFunction.applyInverse(value));
+
+				}
 				if(consistenyCheck!=null) {
 					F re = mapFunction.apply(get());
 					if(!consistenyCheck.test(value, re))
 						setter.accept(re);
 				}
 			}
+
 		};
 		if(reentryGuard)
 			interceptor=new Nonreentrant().fixed(interceptor, a->{

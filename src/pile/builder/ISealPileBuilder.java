@@ -321,6 +321,9 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 					}
 					if(oc!=null)
 						oc.set(v);
+					//TODO optionally, 
+					//set the valueBeingBuilt immediately 
+					//and check for consistency
 				})
 				.parent(derefThis)
 				.dynamicDependencies()

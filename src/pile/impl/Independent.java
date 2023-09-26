@@ -553,6 +553,13 @@ HasInfluencers
 	}
 
 	@Override public void revalidate() {}
+	/**
+	 * Cause this {@link Independent} to follow whatever value the leader has,
+	 * using the {@link #transferFrom(pile.aspect.ReadValue, boolean)} method.
+	 * @param leader
+	 * @param alsoInvalidate
+	 * @return
+	 */
 	public ValueListener follow(ReadListenValue<? extends E> leader, boolean alsoInvalidate) {
 		ValueListener vl = e->{
 			transferFrom(leader, alsoInvalidate);

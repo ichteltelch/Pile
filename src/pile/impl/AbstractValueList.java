@@ -159,6 +159,16 @@ implements Iterable<E>{
 	public synchronized void add(int index, E e){
 		addV(index, wrap(e));
 	}
+	
+	/**
+	 * Replace an element at the specified index. 
+	 * It is wrapped in an {@link ReadDependency} by the {@link #wrap(Object)} method.
+	 * @param index
+	 * @param e
+	 */
+	public synchronized void set(int index, E e){
+		setV(index, wrap(e));
+	}
 
 	/**
 	 * Override this to provide a standard way for wrapping simple values into observable values
@@ -212,7 +222,23 @@ implements Iterable<E>{
 		}
 		intervalAdded(index, index);
 	}
-
+	/**
+	 * Replace an element at the specified index, wrapped in the given {@link ReadWriteListenDependency}.
+	 * Note that the {@link ReadWriteListenDependency} will be 
+	 * {@link ReadDependency#destroy() destroy}ed when the element is removed.
+	 * @param index
+	 * @param e
+	 */
+	public synchronized void setV(int index, ReadWriteListenDependency<E> e){
+		try(Suppressor s = head().suppressAutoValidation()){
+			ReadWriteListenDependency<E> old = elems.get(index);
+			head().removeDependency(old);
+			elems.remove(index);
+			head().addDependency(e);
+			elems.add(index, e);
+		}
+		intervalAdded(index, index);
+	}
 	/**
 	 * Remove an element by index.
 	 * @param i

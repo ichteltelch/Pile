@@ -33,4 +33,27 @@ public interface DependencyRecorder {
 		@Override public Recomputation<?> getRecomputation() {return null;}
 		@Override public void recordDependency(Dependency d) {}
 	};
+	/**
+	 * Make a {@link DependencyRecorder} that does nothing except provide
+	 * info about the enclosing {@link Recomputation}.
+	 * USe it to suspend recording dependencies using {@link Recomputations#withDependencyRecorder(DependencyRecorder)}
+	 * while still allowing the program to obtain the current {@link Recomputation}
+	 * using {@link Recomputations#getCurrentRecomputation()}.
+	 * @return
+	 */
+	public default DependencyRecorder nonForwarding() {
+		Recomputation<?> reco = this.getRecomputation();
+		return new DependencyRecorder() {
+			
+			@Override
+			public void recordDependency(Dependency d) {
+			}
+			
+			
+			@Override
+			public Recomputation<?> getRecomputation() {
+				return reco;
+			}
+		};
+	}
 }

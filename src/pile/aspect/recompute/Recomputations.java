@@ -237,10 +237,40 @@ public class Recomputations {
 		return reco!=null && reco.isDependencyScout();
 	}
 	/**
-	 * Set the current {@link Recomputation} for this {@link Thread} to <code>null</code> and restore it when the {@link MockBlock} is closed.
+	 * Suspend {@link Dependency} recording for this {@link Thread}
+	 * for the lifetime of the returned {@link MockBlock}.
+	 * If there was an ongoing {@link Recomputation}, it will still be accessible
+	 * using {@link #getCurrentRecomputation()}.
 	 * @return
 	 */
 	public static MockBlock dontRecord() {
+		return dontRecord(false);
+	}
+	/**
+	 * Set the current {@link Recomputation} for this {@link Thread} to 
+	 * <code>null</code> and restore it when the {@link MockBlock} is closed.
+	 * @return
+	 */
+	public static MockBlock withoutRecomputation() {
+		return withCurrentRecomputation(null);
+	}
+	
+	/**
+	 * Suspend {@link Dependency} recording for this {@link Thread}
+	 * for the lifetime of the returned {@link MockBlock}, offering choice
+	 * between two different ways to do that.
+
+	 * @param nullRecomputation If <code>true</code>, this methods acts like {@link #withoutRecomputation()}.
+	 * If <code>false</code>, it acts like {@link #dontRecord()}.
+	 * @return
+	 */
+
+	public static MockBlock dontRecord(boolean nullRecomputation) {
+		if(!nullRecomputation) {
+			Recomputation<?> reco = getCurrentRecomputation();
+            if(reco!=null)
+                return withDependencyRecorder(reco.nonForwarding());
+		}
 		return withCurrentRecomputation(null);
 	}
 

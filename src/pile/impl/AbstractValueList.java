@@ -12,6 +12,8 @@ import pile.aspect.combinations.Pile;
 import pile.aspect.combinations.ReadDependency;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadWriteListenDependency;
+import pile.aspect.recompute.Recomputations;
+import pile.aspect.suppress.MockBlock;
 import pile.aspect.suppress.Suppressor;
 import pile.specialized_bool.PileBool;
 import pile.specialized_bool.SealBool;
@@ -159,7 +161,7 @@ implements Iterable<E>{
 	public synchronized void add(int index, E e){
 		addV(index, wrap(e));
 	}
-	
+
 	/**
 	 * Replace an element at the specified index. 
 	 * It is wrapped in an {@link ReadDependency} by the {@link #wrap(Object)} method.
@@ -178,14 +180,14 @@ implements Iterable<E>{
 	protected ReadWriteListenDependency<E> wrap(E e) {
 		throw new UnsupportedOperationException("AbstractValueList::wrap has to be overriden to be used");
 	}
-	
+
 	/**
 	 * Brackets that might be installed on all elements of this list.
 	 * Whether and how this field is used is up to the concrete subclass.
 	 * 
 	 */
 	protected ArrayList<ValueBracket<? super E, ? super ReadListenDependency<? extends E>>> brackets;
-	
+
 	/**
 	 * Add a {@link ValueBracket} that might be installed on all elements of this list.
 	 * Whether and how this wil be used is up to the concrete subclass.
@@ -206,7 +208,7 @@ implements Iterable<E>{
 	public synchronized void addV(ReadWriteListenDependency<E> e){
 		addV(size(), e);
 	}
-	
+
 
 	/**
 	 * Insert an element at the specified index, wrapped in the given {@link ReadWriteListenDependency}.
@@ -551,12 +553,14 @@ implements Iterable<E>{
 			synchronized (this) {
 				localRef = sizeR;
 				if (localRef == null) {
-					localRef = Piles.sealed(size()).recompute(()->{
-						return size();
-					})
-							.name((name==null?"?":name)+".size")
-							.parent(this)
-							.whenChanged(head());
+					try(MockBlock b = Recomputations.withoutRecomputation()) {
+						localRef = Piles.sealed(size()).recompute(()->{
+							return size();
+						})
+								.name((name==null?"?":name)+".size")
+								.parent(this)
+								.whenChanged(head());
+					}
 					sizeR = localRef;
 				}
 			}
@@ -590,16 +594,18 @@ implements Iterable<E>{
 			synchronized (this) {
 				local = emptyV;
 				if(local==null) {
-					SealBool ret = PileBool.equal(sizeR(), 0);
-					ret.setName((name==null?"?":name)+" empty?");
-					ret.owner=this;
-					local = ret.validBuffer();
+					try(MockBlock b = Recomputations.withoutRecomputation()) {
+						SealBool ret = PileBool.equal(sizeR(), 0);
+						ret.setName((name==null?"?":name)+" empty?");
+						ret.owner=this;
+						local = ret.validBuffer();
+					}
 					emptyV = local;
 				}
 			}
 		}
 		return local;
-		
+
 	}
 
 	@Override
@@ -612,7 +618,7 @@ implements Iterable<E>{
 		sb.append(elems.next());
 		while(elems.hasNext())
 			sb.append(", ").append(elems.next());
-		
+
 		return sb.append("]").toString();
 	}
 

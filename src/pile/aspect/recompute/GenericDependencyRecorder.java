@@ -29,6 +29,10 @@ public class GenericDependencyRecorder implements DependencyRecorder{
 	public Recomputation<?> getRecomputation() {
 		return outer==null?null:outer.getRecomputation();
 	}
+	@Override
+	public Recomputation<?> getReceivingRecomputation() {
+		return outer==null?null:outer.getReceivingRecomputation();
+	}
 
 	@Override
 	public void recordDependency(Dependency d) {

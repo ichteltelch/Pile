@@ -28,6 +28,7 @@ import pile.aspect.LazyValidatable;
 import pile.aspect.VetoException;
 import pile.aspect.combinations.Pile;
 import pile.aspect.listen.ValueEvent;
+import pile.aspect.recompute.DependencyRecorder;
 import pile.aspect.recompute.Recomputation;
 import pile.aspect.recompute.Recomputation.WrapWeak;
 import pile.aspect.recompute.Recomputations;
@@ -498,7 +499,7 @@ implements Pile<E>, HasAssociations.Mixin
 		}
 		___startPendingRecompute(force, _scout);
 	}
-	
+
 	/**
 	 * This tracks how deeply calls to _startRecomputation are nested and logs a warning if it becomes too deep
 	 * TODO: Make this a debugging feature not enabled by default
@@ -1312,6 +1313,10 @@ implements Pile<E>, HasAssociations.Mixin
 		}
 
 		@Override
+		public boolean isDynamic() {
+			return recording || recorded!=null;
+		}
+		@Override
 		public void recordDependency(Dependency d) {
 			if(d==null)
 				return;
@@ -1447,7 +1452,7 @@ implements Pile<E>, HasAssociations.Mixin
 					}catch(SecurityException x) {
 						log.log(Level.WARNING, "could not restore thread name", x);
 					}
-				threadNameBeforeRenaming = null;
+					threadNameBeforeRenaming = null;
 				}
 			}else {
 				if(threadNameBeforeRenaming==null)
@@ -1478,8 +1483,8 @@ implements Pile<E>, HasAssociations.Mixin
 				ret.append("Recomputation for '")
 				.append(o.dependencyName())
 				.append('\'');
-			
-			
+
+
 			return ret.toString();
 		}
 
@@ -2312,20 +2317,20 @@ implements Pile<E>, HasAssociations.Mixin
 			closeBrackets();
 		}
 	}
-//	protected String openTransactionCheckAssertionErrorMessage() {
-//		return "There are no current transactions but there are changing dependencies";
-//	}
-//	protected boolean openTransactionCheck(){
-//		assert Thread.holdsLock(mutex);
-//		return changingDependencies==null || changingDependencies.isEmpty();
-//	}
-//	protected String closeTransactionCheckAssertionErrorMessage() {
-//		return "All transactions ended but there still are changing dependencies";
-//	}
-//	protected boolean closeTransactionCheck(){
-//		assert Thread.holdsLock(mutex);
-//		return changingDependencies==null || changingDependencies.isEmpty();
-//	}
+	//	protected String openTransactionCheckAssertionErrorMessage() {
+	//		return "There are no current transactions but there are changing dependencies";
+	//	}
+	//	protected boolean openTransactionCheck(){
+	//		assert Thread.holdsLock(mutex);
+	//		return changingDependencies==null || changingDependencies.isEmpty();
+	//	}
+	//	protected String closeTransactionCheckAssertionErrorMessage() {
+	//		return "All transactions ended but there still are changing dependencies";
+	//	}
+	//	protected boolean closeTransactionCheck(){
+	//		assert Thread.holdsLock(mutex);
+	//		return changingDependencies==null || changingDependencies.isEmpty();
+	//	}
 	@Override
 	protected boolean __shouldRemainInvalid(){
 		assert Thread.holdsLock(mutex);
@@ -2345,7 +2350,7 @@ implements Pile<E>, HasAssociations.Mixin
 		//				!canRecomputeWithInvalidDependencies &&
 		//				!allDependenciesValid() /*&& !oldValid*/);
 	}
-	
+
 	@Override
 	protected boolean __hasChangedDependencies(){
 		assert Thread.holdsLock(mutex);
@@ -2517,7 +2522,9 @@ implements Pile<E>, HasAssociations.Mixin
 			synchronized (mutex) {
 				localRef = validity;
 				if (localRef == null) {
-					localRef = new IndependentBool(__valid());
+					try(MockBlock b = Recomputations.withoutRecomputation()) {
+						localRef = new IndependentBool(__valid());
+					}
 					Consumer<? super Boolean> setter = localRef.makeSetter();
 					setValidity=v->{
 						if(ET_TRACE && traceEnabledFor(this))trace("setValidity invoked with"+v);
@@ -2572,7 +2579,9 @@ implements Pile<E>, HasAssociations.Mixin
 			synchronized (mutex) {
 				localRef = computing;
 				if (localRef == null) {
-					localRef = new IndependentBool(isComputing);
+					try(MockBlock b = Recomputations.withoutRecomputation()) {
+						localRef = new IndependentBool(isComputing);
+					}
 					Consumer<? super Boolean> setter = localRef.makeSetter();
 					setComputing=v->{
 						assert !Thread.holdsLock(informQueue);
@@ -2836,7 +2845,7 @@ implements Pile<E>, HasAssociations.Mixin
 	public Depender getPrivilegedDepender() {
 		return this;
 	}
-	
+
 	//	/**
 	//	 * Set the "don't retry" property. If it is set to <code>true</code>, 
 	//	 * a new recomputation will not be started if this {@link Value} is already valid.
@@ -3294,6 +3303,20 @@ implements Pile<E>, HasAssociations.Mixin
 	@Override
 	public void _setOwner(Object o) {
 		owner = o;
+	}
+
+	{
+		if(DebugEnabled.ERROR_ON_CREATE_IN_DYNAMIC_RECOMPUTATION) {
+			DependencyRecorder recorder = Recomputations.getCurrentRecorder();
+			if(recorder!=null) {
+				Recomputation<?> recomp = recorder.getReceivingRecomputation();
+				if(recomp != null && recomp.isDynamic()) {
+					String msg = "Reactive value created durinc dynamic dependency recording";
+					log.log(Level.WARNING, msg);
+					throw new IllegalStateException(msg);
+				}
+			}
+		}
 	}
 
 

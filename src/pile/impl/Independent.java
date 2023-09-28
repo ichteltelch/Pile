@@ -27,7 +27,9 @@ import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteListenDependency;
 import pile.aspect.listen.ValueListener;
+import pile.aspect.recompute.DependencyRecorder;
 import pile.aspect.recompute.Recomputation;
+import pile.aspect.recompute.Recomputations;
 import pile.aspect.suppress.Suppressor;
 import pile.interop.debug.DebugEnabled;
 import pile.interop.wait.WaitService;
@@ -651,5 +653,17 @@ HasInfluencers
 			return false;
 		}
 	}
-
+	{
+		if(DebugEnabled.ERROR_ON_CREATE_IN_DYNAMIC_RECOMPUTATION) {
+			DependencyRecorder recorder = Recomputations.getCurrentRecorder();
+			if(recorder!=null) {
+				Recomputation<?> recomp = recorder.getReceivingRecomputation();
+				if(recomp != null && recomp.isDynamic()) {
+                    String msg = "Reactive value created durinc dynamic dependency recording";
+                    log.log(Level.WARNING, msg);
+					throw new IllegalStateException(msg);
+				}
+			}
+		}
+	}
 }

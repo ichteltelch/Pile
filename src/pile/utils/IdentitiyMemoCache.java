@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import pile.aspect.recompute.Recomputations;
+import pile.aspect.suppress.MockBlock;
+
 /**
  * A memoization cache that compares its keys by identity und uses
  * {@link WeakReference}s for both its keys and its values
@@ -56,34 +59,40 @@ public final class IdentitiyMemoCache<K, V> implements Function<K, V>{
 				cache.remove(keyRef);
 			}
 		}
-		while(true) {
+		
+		//Memoized reactive values can safely be created during depdendency recording,
+		//as this will happen only once
+		try(MockBlock b = Recomputations.withoutRecomputation()) {
+
+			while(true) {
 
 
-			V value = derive.apply(key);
-			synchronized (cache) {
-				if(cache.containsKey(keyRef)) {
-					WeakReference<V> valueRef = cache.get(keyRef);
-					if(valueRef==null)
-						return null;
-					V newValue = valueRef.get();
-					if(newValue!=null)
-						return newValue;
-					cache.remove(keyRef);
-					continue;
-				}
-				if(value==null) {
-					cache.put(keyRef, null);
-					return null;
-				}
-				WeakCleanup<V> valueRef = new WeakCleanup<V>(value, rq) {
-					@Override
-					public void run() {
-						synchronized (cache) {
-							cache.remove(keyRef);
-						}
+				V value = derive.apply(key);
+				synchronized (cache) {
+					if(cache.containsKey(keyRef)) {
+						WeakReference<V> valueRef = cache.get(keyRef);
+						if(valueRef==null)
+							return null;
+						V newValue = valueRef.get();
+						if(newValue!=null)
+							return newValue;
+						cache.remove(keyRef);
+						continue;
 					}
-				};
-				cache.put(keyRef, valueRef);
+					if(value==null) {
+						cache.put(keyRef, null);
+						return null;
+					}
+					WeakCleanup<V> valueRef = new WeakCleanup<V>(value, rq) {
+						@Override
+						public void run() {
+							synchronized (cache) {
+								cache.remove(keyRef);
+							}
+						}
+					};
+					cache.put(keyRef, valueRef);
+				}
 			}
 		}
 	}

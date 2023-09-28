@@ -412,6 +412,10 @@ public interface Recomputation<E> extends DependencyRecorder{
 //		public void setThreadNameOnFinish(String name) {
 //			back.setThreadNameOnFinish(name);
 //		}
+		@Override
+		public boolean isDynamic() {
+			return back.isDynamic();
+		}
 	}
 
 	/**
@@ -618,6 +622,10 @@ public interface Recomputation<E> extends DependencyRecorder{
 	default Recomputation<?> getRecomputation() {
 		return this;
 	}
+	@Override
+	default Recomputation<?> getReceivingRecomputation() {
+		return this;
+	}
 	/**
 	 * Called to announce that the immediate recomputation phase is over and, if
 	 * the {@link Recomputation} is still not fulfilled, the recomputation may
@@ -625,4 +633,9 @@ public interface Recomputation<E> extends DependencyRecorder{
 	 * in delayed mode results in a warning being logged.
 	 */
 	public void enterDelayedMode();
+	/**
+	 * 
+	 * @return Whether this {@link Recomputation} uses dynamic {@link Dependency} recording
+	 */
+	public boolean isDynamic();
 }

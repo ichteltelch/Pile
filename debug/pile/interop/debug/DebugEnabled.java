@@ -112,4 +112,10 @@ public class DebugEnabled {
 			DebugEnabled.COUNT_BRACKET_LOCKS
 			?ThreadLocal.withInitial(MutInt::new):
 				null;
+	
+	/**
+	 * Causes an {@link IllegalStateException} to be thrown from the constructors of
+	 * reactive values if they run during a dependency recording {@link Recomputation}.
+	 */
+	public static final boolean ERROR_ON_CREATE_IN_DYNAMIC_RECOMPUTATION = true;
 }

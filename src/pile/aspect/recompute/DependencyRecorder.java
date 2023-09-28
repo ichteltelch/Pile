@@ -20,17 +20,30 @@ public interface DependencyRecorder {
 	 * @return
 	 */
 	Recomputation<?> getRecomputation();
+
+	/**
+	 * 
+	 * @return Usually the same as {@link #getRecomputation()}, but <code>null</code>
+	 * if {@link #recordDependency(Dependency)} does not forward the information
+	 * about recorded dependencies to a {@link Recomputation}.
+	 * 	 */
+	Recomputation<?> getReceivingRecomputation();
+
+	
 	/**
 	 * Called when a {@link Dependency} is accessed.
 	 * This method is not guaranteed to be thread safe.
 	 * @param d
 	 */
 	public void recordDependency(Dependency d);
+	
+	
 	/**
 	 * A {@link DependencyRecorder} that does nothing.
 	 */
 	public static final DependencyRecorder NOP = new DependencyRecorder(){
 		@Override public Recomputation<?> getRecomputation() {return null;}
+		@Override public Recomputation<?> getReceivingRecomputation() {return null;}
 		@Override public void recordDependency(Dependency d) {}
 	};
 	/**
@@ -54,6 +67,11 @@ public interface DependencyRecorder {
 			public Recomputation<?> getRecomputation() {
 				return reco;
 			}
+			@Override
+			public Recomputation<?> getReceivingRecomputation() {
+				return null;
+			}
 		};
 	}
+	
 }

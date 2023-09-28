@@ -91,7 +91,9 @@ Here's an overview of the features offered by the *Pile* framework, with pointer
  When used, a `Recomputation` is run in a special *scouting* mode during which accesses to other reactive values are recorded each time the dependencies may have changed.
  In scouting mode, fulfilling the `Recomputation` has no effect other than ending the scouting mode and reconfiguring the dependencies according to what was recorded.
  Almost the only thing the application programmer needs to care about is to avoid doing useless nontrivial computations when the `Recomputation` is in scouting mode, 
- and to access the same dependencies during the actual `Recomputation`.
+ and to access the same dependencies during the actual `Recomputation`. Another caveat is that creating reactive values during a recomputation tends to access them, 
+ causing the recomputation to start over endlessly because a previously unrecodered `Dependency` is detected. You can avoid that by suspending the dependency recording behavior
+ for the lifetime of a given code block.
  * **Transactions**: Let's say we have four reactive values `A`, `R`, `S` and `X`, which depend on each other in a diamond pattern:
  `A` depends on `R` and `S`, which both depend on `X`. Now, if `X` is changed, `R` and `S` will recompute themselves. But we want `A` to recompute itself only once, after both
  `R` and `S` have attained their (possibly) new values, otherwise `A` would maybe recompute itself twice, and, what's worse, do so once with inconsistent inputs. This is why 
@@ -173,7 +175,8 @@ Here's an overview of the features offered by the *Pile* framework, with pointer
    * The various decisions the lead to the recomputation (or not) of a `PileImpl` can be documented, to be inspected later in the debbuger. 
    Since this makes the program very slow, it is meant to be switched on on a per-value basis.
    * The threads that are busy recomputing values can be renamed according to the name of the `Pile` they recompute so you can more easily find them in the debugger or you get more meaningful log messages.
-   * Warnings can be logged when problematic usage of the framework is detected, such as `destroy`ing something while a `ValueBracket` is closing, not `fulfill`ing a `Recomputation`, or dropping the last strong reference to a `Suppressor` without releasing it first.
+   * Warnings can be logged or exceptions thrown when problematic usage of the framework is detected, such as `destroy`ing something while a `ValueBracket` is closing, not `fulfill`ing a `Recomputation`, dropping the last strong reference to a `Suppressor` without releasing it first, or creating a reactive value during a `Recomputation` that uses 
+   dynamic dependency recording.
    
    The `DebugEnabled` class is in its own source folder so you can easily repalce it with your customized version while leaving the rest of *Pile*'s sources unchanged.
  The flags for which debugging features are enabled are `static final boolean`s to make use of Java's conditional compliation so that the runtime overhead is greatly reduced
@@ -189,3 +192,13 @@ The Pile framework has no library dependencies outside the standard library. Wit
     and switching it off for a production build is not as straightforward as it should be. 
     * Your program might utilize Java's thread interruption mechanism for something else besides "crash the entire thread". For example, `interrupt` might just mean "wake up, check messages,
     and return to sleep unless you got a special interrupt message". Making the `WaitService` to be used an injectable dependency allows *Pile* to be adapted to such needs.
+
+## About
+I developed *Pile* for my employer [Promadent UG](https://www.promadent.de), who kindly gave me permission to publish it as open source. *Pile* is used in our dental software *Biss*, both to manage the workflow in the reactive model and to define the GUI. 
+
+### Limitations
+Many computations in the workflow of *Biss* are quite long-running, and the GUI needs to react only at human time scale. Hence, *Pile* is not very optimized for efficiency, as I don't really need it and changing a working system has the avoidable potential to break things. Instead, it focuses on flexibility, debuggability, safety and ease of use (although, given it's Java, it's still quite clunky). In general, *Pile* is the way I need it to be, and functionallity that I don't need may be missing or completely untested.
+
+Some parts of the API, such as certain method names, are unsystematic or otherwise bad. I may change these in the future.
+
+Like basically everything made with Java, *Pile* wishes it was written in Kotlin. At the very least, *Pile* would be much more comfortable to use from Kotlin code. Maybe I'll provide Kotlin bindings in the future.

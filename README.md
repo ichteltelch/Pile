@@ -176,7 +176,7 @@ Here's an overview of the features offered by the *Pile* framework, with pointer
    Since this makes the program very slow, it is meant to be switched on on a per-value basis.
    * The threads that are busy recomputing values can be renamed according to the name of the `Pile` they recompute so you can more easily find them in the debugger or you get more meaningful log messages.
    * Warnings can be logged or exceptions thrown when problematic usage of the framework is detected, such as `destroy`ing something while a `ValueBracket` is closing, not `fulfill`ing a `Recomputation`, dropping the last strong reference to a `Suppressor` without releasing it first, or creating a reactive value during a `Recomputation` that uses 
-   dynamic dependency recording.
+   dynamic `Dependency` recording.
    
    The `DebugEnabled` class is in its own source folder so you can easily repalce it with your customized version while leaving the rest of *Pile*'s sources unchanged.
  The flags for which debugging features are enabled are `static final boolean`s to make use of Java's conditional compliation so that the runtime overhead is greatly reduced

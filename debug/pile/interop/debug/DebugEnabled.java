@@ -83,7 +83,7 @@ public class DebugEnabled {
 	/**
 	 * Rename threads for the duration of them performing a {@link Recomputation}.
 	 */
-	public static final boolean RENAME_RECOMPUTATION_THREADS = false;
+	public static final boolean RENAME_RECOMPUTATION_THREADS = !false;
 
 	/**
 	 * Log a warning together with a synthetic exception to provide a stack trace.

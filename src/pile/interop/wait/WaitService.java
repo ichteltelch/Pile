@@ -464,7 +464,7 @@ public interface WaitService {
 		}
 
 		@Override public void wait(Object monitor) throws InterruptedException { 
-			raw.wait(periodicWakeupTime);
+			raw.wait(monitor, periodicWakeupTime);
 		}
 
 		@Override public void wait(Object monitor, long millis) throws InterruptedException 

@@ -199,6 +199,10 @@ public class SequentialQueue extends AbstractExecutorService{
 	public void sync() throws InterruptedException {
 		syncEnqueue(Functional.NOP);
 	}
+	public void syncOrWaitUntilShorter(int limit) throws InterruptedException {
+		syncEnqueue(Functional.NOP, limit);
+	}
+
 	/**
 	 * Wait several times until all jobs queued at the start of each wait have been executed.
 	 * 
@@ -233,6 +237,32 @@ public class SequentialQueue extends AbstractExecutorService{
 		synchronized (w) {
 			while(!w.ran)
 				WaitService.get().wait(w, 1000);
+		}
+
+	}
+	/**
+	 * Enqueue a job and wait until it is done or the queue is shorter than the given limit
+	 * @param runThis
+	 * @throws InterruptedException
+	 */
+	public void syncEnqueue(Runnable runThis, int limit) throws InterruptedException {
+		class Wrapper implements Runnable{
+			boolean ran = false;
+			@Override
+			public void run() {
+				StandardExecutors.safe(runThis);
+				synchronized (SequentialQueue.this) {
+					ran = true;
+					WaitService.get().notifyAll(SequentialQueue.this);
+				}
+
+			}
+		}
+		Wrapper w = new Wrapper();
+		enqueue(w);
+		synchronized (this) {
+			while(!w.ran && q.size()>limit)
+				WaitService.get().wait(this);
 		}
 
 	}

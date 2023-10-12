@@ -50,7 +50,7 @@ public interface Recomputation<E> extends DependencyRecorder{
 	}
 	/**
 	 * End the recomputation by providing a value, and run some code before the transaction is ended
-	 * in case the recomputation was still ongoing.  
+	 * in case the recomputation was still ongoing and not in {@link Dependency} scouting mode.  
 	 * @param value
 	 * @param onSuccess This code can be used to add or remove dependencies 
 	 * or to write additional recomputation results to buffers of {@link PileImpl}s that depend on this one
@@ -62,7 +62,7 @@ public interface Recomputation<E> extends DependencyRecorder{
 	public boolean fulfill(E value, Runnable onSuccess);
 	/**
 	 * End the recomputation by providing no value, and run some code before the transaction is ended
-	 * in case the recomputation was still ongoing. 
+	 * in case the recomputation was still ongoing and not in {@link Dependency} scouting mode. 
 	 * @param onSuccess This code can be used to add or remove dependencies 
 	 * @throws IllegalStateException if the current thread is not the Thread of the recomputation
 	 * @return true if the recomputation was still ongoing, that is, it was not yet cancelled nor fulfilled

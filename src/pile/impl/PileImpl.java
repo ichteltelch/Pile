@@ -1075,7 +1075,8 @@ implements Pile<E>, HasAssociations.Mixin
 						dependOnRecorded(outer, rec);
 					}
 					restart=scout && !outer.isValidAsync();
-					StandardExecutors.safe(onSuccess);
+					if(!scout)
+						StandardExecutors.safe(onSuccess);
 					return true;
 				}finally {
 					if(depend && rec!=null) {

@@ -196,6 +196,8 @@ The Pile framework has no library dependencies outside the standard library. Wit
 ## About
 I developed *Pile* for my employer [Promadent UG](https://www.promadent.de), who kindly gave me permission to publish it as open source. *Pile* is used in our dental software *Biss*, both to manage the workflow in the reactive model and to define the GUI. 
 
+It is called "*Pile*" because a (nuclear) pile is a kind of primitive (nuclear) reactor.
+
 ### Limitations
 Many computations in the workflow of *Biss* are quite long-running, and the GUI needs to react only at human time scale. Hence, *Pile* is not very optimized for efficiency, as I don't really need it and changing a working system has the avoidable potential to break things. Instead, it focuses on flexibility, debuggability, safety and ease of use (although, given it's Java, it's still quite clunky). In general, *Pile* is the way I need it to be, and functionallity that I don't need may be missing or completely untested.
 

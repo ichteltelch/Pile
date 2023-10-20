@@ -1447,7 +1447,7 @@ implements Pile<E>, HasAssociations.Mixin
 				return false;
 			threadName = name;
 			if(name==null) {
-				if(threadNameBeforeRenaming==null) {
+				if(threadNameBeforeRenaming!=null) {
 					try {
 						t.setName(threadNameBeforeRenaming);
 					}catch(SecurityException x) {

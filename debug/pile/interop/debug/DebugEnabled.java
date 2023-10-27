@@ -26,7 +26,7 @@ public class DebugEnabled {
 	 * Whether debugging is enabled at all.
 	 * If this is <code>false</code>, {@link DebugCallback}s are not invoked.
 	 */
-	public static final boolean DE=false;
+	public static final boolean DE=!false;
 	/**
 	 * Whether detailed traces are saved in all {@link AbstractReadListenDependency}
 	 * for which {@link #traceEnabledFor(Dependency)} returns <code>true</code>.
@@ -35,6 +35,8 @@ public class DebugEnabled {
 	 * It can make the program very slow.
 	 */
 	public static final boolean ET_TRACE=DE && true;
+	
+	public static final boolean TRANSACTION_TRACES = false;
 	
 	/**
 	 * The set of reactive values for which a detailed trace is saved.

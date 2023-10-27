@@ -26,7 +26,7 @@ public class DebugEnabled {
 	 * Whether debugging is enabled at all.
 	 * If this is <code>false</code>, {@link DebugCallback}s are not invoked.
 	 */
-	public static final boolean DE=!false;
+	public static final boolean DE=false;
 	/**
 	 * Whether detailed traces are saved in all {@link AbstractReadListenDependency}
 	 * for which {@link #traceEnabledFor(Dependency)} returns <code>true</code>.

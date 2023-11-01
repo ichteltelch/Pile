@@ -2098,11 +2098,15 @@ implements Pile<E>, HasAssociations.Mixin
 		try {
 			cancelPendingRecomputation(true);
 			if(recompute!=null && recompute.useDependencyScouting()) {
+				synchronized (mutex) {
+					closeOldBrackets();
+					oldValue = val;
+					openOldBrackets();
+				}
 				__scheduleRecomputation(false, true);
 				__startPendingRecompute(true, true);
-			}
-
-			fireDeepRevalidate();
+			}				
+			fireDeepRevalidateOnSet();
 			boolean needDeepRevalidate;
 			synchronized (mutex) {
 				synchronized (invalidDependenciesMutex) {

@@ -30,6 +30,7 @@ import pile.aspect.combinations.ReadWriteListenDependency;
 import pile.aspect.combinations.ReadWriteListenValue;
 import pile.aspect.listen.ValueListener;
 import pile.aspect.recompute.Recomputation;
+import pile.aspect.suppress.MockBlock;
 import pile.aspect.suppress.Suppressor;
 import pile.aspect.transform.TransformReaction;
 import pile.builder.AbstractPileBuilder;
@@ -71,9 +72,14 @@ import pile.utils.Functional;
 
 public class Piles {
 
+
+	
 	@SuppressWarnings("unused")
 	private final static Logger log=Logger.getLogger("Values");
 
+	private static ThreadLocal<Boolean> shouldFireDeepRevalidateOnSet=new ThreadLocal<>();
+
+	
 	public static final ConstantBool TRUE = constant(true);
 	public static final ConstantBool FALSE = constant(false);
 	public static final Constant<?> NULL = new Constant<>(null);
@@ -2289,6 +2295,7 @@ public class Piles {
 
 
 
+
 	/**
 	 * {@link Pile#revalidate() Revalidate} all piles that the given {@link Depender} 
 	 * depends on transitively, via {@link Dependency} relationships or
@@ -2617,4 +2624,14 @@ public class Piles {
 	 */
 	public static <E> IndependentBuilder<Independent<E>, E> ib(E init){return new IndependentBuilder<>(new Independent<>(init));}
 
+	
+	public static boolean shouldFireDeepRevalidateOnSet() {
+		return !Boolean.FALSE.equals(shouldFireDeepRevalidateOnSet.get());
+	}
+	public static MockBlock withShouldFireDeepRevalidateOnSet(Boolean should) {
+		Boolean old = shouldFireDeepRevalidateOnSet.get();
+		MockBlock ret = MockBlock.closeOnly(()->shouldFireDeepRevalidateOnSet.set(old));
+		shouldFireDeepRevalidateOnSet.set(should);
+		return ret;
+	}
 }

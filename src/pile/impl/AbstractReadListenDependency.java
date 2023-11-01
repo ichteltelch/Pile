@@ -1662,6 +1662,21 @@ ListenValue.Managed{
 	 * @param cancelOngoing Whether to cancel any {@link Recomputation} that may already be ongoing.
 	 * 
 	 */
+	boolean shouldFireDeepRevalidateOnSet = true;
+
+	public void __shouldFireDeepRevalidateOnSet(boolean b) {
+		shouldFireDeepRevalidateOnSet = b;	
+	}
+	
+	protected void fireDeepRevalidateOnSet() {
+		if(!shouldFireDeepRevalidateOnSet)
+			return;
+		if(!Piles.shouldFireDeepRevalidateOnSet())
+			return;
+		
+		fireDeepRevalidate();
+	}
+	
 	abstract protected void __scheduleRecomputation(boolean cancelOngoing);
 	public void __fireDeepRevalidate() {fireDeepRevalidate();}
 	/**

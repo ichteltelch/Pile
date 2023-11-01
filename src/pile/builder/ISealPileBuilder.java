@@ -21,6 +21,7 @@ import pile.aspect.recompute.GenericDependencyRecorder;
 import pile.aspect.recompute.Recomputation;
 import pile.aspect.recompute.Recomputations;
 import pile.aspect.suppress.MockBlock;
+import pile.aspect.suppress.Suppressor;
 import pile.impl.AbstractReadListenDependency;
 import pile.impl.SealPile;
 import pile.specialized_bool.combinations.ReadListenValueBool;
@@ -468,7 +469,9 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					setter.set(value);
+					try(Suppressor _s = follower.suppressDeepRevalidation()){
+						setter.set(value);
+					}
 				} catch (InvalidValueException x) {
 					setter.permaInvalidate();
 				}
@@ -518,6 +521,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 		if(follower.owner==null)
 			follower.owner=leader;
 
+
 		WriteValue<? super E> followerSetter = follower.makeSetter();
 		WeakCleanupWithRunnable<WriteValue<? super E>> followerRef = new WeakCleanupWithRunnable<>(followerSetter, null);
 
@@ -531,7 +535,9 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					setter.accept(value);
+					try(Suppressor _s = follower.suppressDeepRevalidation()){
+						setter.accept(value);
+					}
 				} catch (InvalidValueException x) {
 					setter.permaInvalidate();
 				}
@@ -600,7 +606,9 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					setter.accept(value);
+					try(Suppressor _s = follower.suppressDeepRevalidation()){
+						setter.accept(value);
+					}
 				} catch (InvalidValueException e) {
 					setter.permaInvalidate();
 				}
@@ -672,7 +680,9 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					setter.accept(value);
+					try(Suppressor _s = follower.suppressDeepRevalidation()){
+						setter.accept(value);
+					}
 				} catch (InvalidValueException e) {
 					setter.permaInvalidate();
 				}

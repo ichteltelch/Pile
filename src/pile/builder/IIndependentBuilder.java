@@ -14,6 +14,7 @@ import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteListenValue;
 import pile.aspect.listen.ValueListener;
+import pile.aspect.suppress.Suppressor;
 import pile.impl.AbstractReadListenDependency;
 import pile.impl.DebugCallback;
 import pile.impl.Independent;
@@ -189,7 +190,9 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 			if(leader.isValid()) {
 				try {
 					E value = leader.getValidOrThrow();
-					setter.accept(value);
+					try(Suppressor _s = follower.suppressDeepRevalidation()){
+						setter.accept(value);
+					}
 				}catch(InvalidValueException x) {
 				}
 			}else {
@@ -241,7 +244,9 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 			if(leader.isValid())
 				try {
 					E value = leader.getValidOrThrow();
-					setter.accept(value);
+					try(Suppressor _s = follower.suppressDeepRevalidation()){
+						setter.accept(value);
+					}
 				}catch(InvalidValueException x) {
 				}
 		};

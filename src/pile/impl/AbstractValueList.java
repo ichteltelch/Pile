@@ -473,6 +473,7 @@ implements Iterable<E>{
 	 * @return
 	 */
 	public static <F, E extends F> ArrayList<F> toArrayList(AbstractValueList<?, E> l, ArrayList<F> ret) {
+		l.head().recordRead();
 		synchronized (l) {
 			for(E e: l)
 				ret.add(e);			
@@ -491,6 +492,7 @@ implements Iterable<E>{
 	 * @return
 	 */
 	public static <F, E extends F> ArrayList<F> toArrayList(AbstractValueList<?, E> l, ArrayList<F> ret, Predicate<? super E> filter) {
+		l.head().recordRead();
 		synchronized (l) {
 			for(E e: l)
 				if(filter.test(e))
@@ -512,6 +514,7 @@ implements Iterable<E>{
 	 * @return
 	 */
 	public static <E, R> ArrayList<R> toArrayList(AbstractValueList<?, E> l, ArrayList<R> ret, Predicate<? super E> filter, Function<? super E, ? extends R> map) {
+		l.head().recordRead();
 		synchronized (l) {
 			for(E e: l)
 				if(filter.test(e))

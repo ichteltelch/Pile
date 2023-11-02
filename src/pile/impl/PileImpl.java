@@ -3315,7 +3315,7 @@ implements Pile<E>, HasAssociations.Mixin
 			DependencyRecorder recorder = Recomputations.getCurrentRecorder();
 			if(recorder!=null) {
 				Recomputation<?> recomp = recorder.getReceivingRecomputation();
-				if(recomp != null && recomp.isDynamic()) {
+				if(recomp != null && recomp.isDynamic() && !recomp.isFinished()) {
 					String msg = "Reactive value created durinc dynamic dependency recording";
 					log.log(Level.WARNING, msg);
 					throw new IllegalStateException(msg);

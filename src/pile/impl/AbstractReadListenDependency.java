@@ -502,7 +502,7 @@ ListenValue.Managed{
 	 * @return
 	 */
 	protected boolean beginTransaction(boolean workInformQueue) {
-		return beginTransaction(workInformQueue, true);
+		return beginTransaction(workInformQueue, true, false);
 		
 	}
 	/**
@@ -516,9 +516,10 @@ ListenValue.Managed{
 	 * after the lock is released. 
 	 * @return
 	 */
-	protected boolean beginTransaction(boolean workInformQueue, boolean moveValueToOldValue) {
+	protected boolean beginTransaction(boolean workInformQueue, boolean moveValueToOldValue, boolean scout) {
 		if(DE && dc!=null) dc.beginTransactionCalled(this);
 		boolean wasValid;
+//		moveValueToOldValue &=! scout;
 		try {
 			boolean inform;
 
@@ -542,7 +543,10 @@ ListenValue.Managed{
 					inform=true;
 					//Remember the value at the start of the transaction
 					if(moveValueToOldValue)
-						moveValueToOldValue();
+						if(scout)
+							copyValueToOldValue();
+						else
+							moveValueToOldValue();
 				}else {
 					//Already in a transaction
 					//Just increase the transaction counter
@@ -559,6 +563,8 @@ ListenValue.Managed{
 					}
 
 				}
+				
+				inform &=! scout;
 
 				//collect the Dependers that should also be in 
 				//transaction mode while this is
@@ -566,16 +572,16 @@ ListenValue.Managed{
 					assert !Thread.holdsLock(informQueue);
 					// assert !Thread.holdsLock(informRunnerMutex);
 					if(ET_TRACE && traceEnabledFor(this))trace("schedule informing of dependers that I have become invalid");
-
+//					StackTraceElement[] cause = Thread.currentThread().getStackTrace();
 					synchronized (informQueue) {
 						informQueue.add(()->{
 							if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers that I have become invalid");
-
 							if(informed==null)
 								informed=new HashSet<>();
 							else {
 								//assert informed.isEmpty();
 							}
+//							cause.clone();
 							WeakIdentityCleanup<Depender>[] deparr;
 							synchronized (mutex) {
 								if(dependOnThis==null || dependOnThis.isEmpty())
@@ -628,6 +634,7 @@ ListenValue.Managed{
 	 * but possibly only if the old value is currently invalid
 	 */
 	protected abstract void moveValueToOldValue();
+	protected abstract void copyValueToOldValue();
 	/**
 	 * @return Whether there is an ongoing recomputation
 	 */
@@ -739,9 +746,11 @@ ListenValue.Managed{
 
 					if(inform) {
 						synchronized (informQueue) {
+							//StackTraceElement[] cause = Thread.currentThread().getStackTrace();
 							informQueue.add(()->{
 								if(informed==null)
 									return;
+								//cause.clone();
 								Depender[] notify = informed.toArray(new Depender[informed.size()]);
 								informed.clear();
 								for(Depender d: notify) {

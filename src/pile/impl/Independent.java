@@ -666,4 +666,8 @@ HasInfluencers
 			}
 		}
 	}
+	@Override
+	protected void copyValueToOldValue() {
+		moveValueToOldValue();
+	}
 }

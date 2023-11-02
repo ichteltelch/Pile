@@ -1874,7 +1874,7 @@ implements Pile<E>, HasAssociations.Mixin
 						{
 							if(DE) addTransactionReason(new TransactionTracker(this, "pending recomputation", null));
 							if(DE && dc!=null) dc.newlyScheduledRecomputation(this); 
-							beginTransaction(false, false);
+							beginTransaction(false, false, scout);
 						}
 					}
 				}
@@ -2322,6 +2322,28 @@ implements Pile<E>, HasAssociations.Mixin
 			closeBrackets();
 		}
 	}
+	@Override
+	protected void copyValueToOldValue() {
+		assert Thread.holdsLock(mutex);
+		if(oldValid) {
+			if(valid) {
+				if(__value==oldValue){
+					return;
+				}else {
+
+				}
+			}else {
+				return;
+			}
+		}
+		if(valid) {
+			if(oldValid) {
+				closeOldBrackets();
+			}
+			oldValue=__value;
+			openOldBrackets();
+		}
+	}
 	//	protected String openTransactionCheckAssertionErrorMessage() {
 	//		return "There are no current transactions but there are changing dependencies";
 	//	}
@@ -2624,7 +2646,7 @@ implements Pile<E>, HasAssociations.Mixin
 		}
 		try {
 			//boolean ret = 
-			beginTransaction(true, invalidate);
+			beginTransaction(true, invalidate, false);
 
 		}finally {
 			boolean reval;

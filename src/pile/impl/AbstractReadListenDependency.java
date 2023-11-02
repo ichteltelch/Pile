@@ -260,7 +260,7 @@ ListenValue.Managed{
 		getListenerManager().fireValueChange();
 	}
 	@Override
-	public void __addDepender(Depender d) {
+	public void __addDepender(Depender d, boolean propagateInvalidity) {
 		if(d==this)
 			throw new IllegalArgumentException("Trivial dependency cycle detected!");
 		boolean wiq = false;
@@ -289,7 +289,7 @@ ListenValue.Managed{
 							if(informed.contains(d))
 								return;
 							if(ET_TRACE && traceEnabledFor(this))trace("Inform new depender "+d);
-							d.dependencyBeginsChanging(this, wasValid, true);						
+							d.dependencyBeginsChanging(this, wasValid, propagateInvalidity);						
 							informed.add(d);	
 						});
 					}

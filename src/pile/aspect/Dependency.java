@@ -49,7 +49,7 @@ public interface Dependency extends LazyValidatable{
 	 * Warning: do not call this method from anywhere else!
 	 * @param d
 	 */
-	void __addDepender(Depender d);
+	void __addDepender(Depender d, boolean propagateInvalidity);
 	/**
 	 * Called by a {@link Depender} to inform this {@link Dependency} that it has stopped depending on it
 	 * <br>

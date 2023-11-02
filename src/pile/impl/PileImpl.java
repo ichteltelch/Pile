@@ -352,7 +352,7 @@ implements Pile<E>, HasAssociations.Mixin
 
 		}
 		if(actuallyAdded) {
-			d.__addDepender(this);			
+			d.__addDepender(this, invalidate);			
 			dependencyAdded(d);
 		}else {
 
@@ -894,7 +894,7 @@ implements Pile<E>, HasAssociations.Mixin
 		//		}
 		@Override
 		public void forgetOldValue() {
-			if(t==null)
+			if(t==null || isDependencyScout())
 				return;
 			if(Thread.currentThread()!=t)
 				throw new IllegalStateException("forgetOldValue() may only be called from the recomputatin step");
@@ -1240,7 +1240,7 @@ implements Pile<E>, HasAssociations.Mixin
 			if(t==null)
 				return;
 			if(Thread.currentThread()!=t)
-				throw new IllegalStateException("addDepenedency() may only be called from the recomputatin step");
+				throw new IllegalStateException("addDependency() may only be called from the recomputatin step");
 			if(isFinished())
 				return;
 			PileImpl<E> outer=this.outer.get();
@@ -1253,7 +1253,7 @@ implements Pile<E>, HasAssociations.Mixin
 			if(t==null)
 				return;
 			if(Thread.currentThread()!=t)
-				throw new IllegalStateException("removeDepenedency() may only be called from the recomputatin step");
+				throw new IllegalStateException("removeDependency() may only be called from the recomputatin step");
 			if(isFinished())
 				return;
 			PileImpl<E> outer=this.outer.get();

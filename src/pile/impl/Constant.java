@@ -96,7 +96,7 @@ public class Constant<E> implements ReadWriteListenDependency<E>{
 	public void fireValueChange() {
 	}
 	@Override
-	public void __addDepender(Depender d) {
+	public void __addDepender(Depender d, boolean propagateInvalidity) {
 
 
 	}

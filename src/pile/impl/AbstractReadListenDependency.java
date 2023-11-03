@@ -599,7 +599,8 @@ ListenValue.Managed{
 										if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers "+d);
 										d.dependencyBeginsChanging(this, wasValid, moveValueToOldValue);
 									}else {
-										if(ET_TRACE && traceEnabledFor(this))trace("was already informed dependers "+d);
+										if(wasValid && moveValueToOldValue)
+											d.escalateDependencyChange(this);
 									}
 								}
 							}

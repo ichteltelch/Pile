@@ -296,6 +296,11 @@ public class SealPile<E> extends PileImpl<E> implements Sealable<E> {
 		public void dependencyBeginsChanging(Dependency d, boolean wasValid, boolean invalidate) {
 			SealPile.this.dependencyBeginsChanging(d, wasValid, invalidate);				
 		}
+		
+		@Override
+		public void escalateDependencyChange(Dependency newlyInvalidDependency) {
+			SealPile.this.escalateDependencyChange(newlyInvalidDependency);
+		}
 
 		@Override
 		public void deepDestroy() {

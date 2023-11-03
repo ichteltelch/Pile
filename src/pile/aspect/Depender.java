@@ -110,6 +110,14 @@ public interface Depender {
 	 * @param d
 	 */
 	void dependencyBeginsChanging(Dependency d, boolean wasValid, boolean invalidate);
+
+	/**
+	 * Called by a dependency that has already notified this {@link Depender} that it 
+	 * is in a transaction, but has not become invalid until now.
+	 * @param newlyInvalidDependency
+	 */
+	public void escalateDependencyChange(Dependency newlyInvalidDependency);
+
 	/**
 	 * Called by a dependency when it has finished a transaction that might have changed it
 	 * <br>

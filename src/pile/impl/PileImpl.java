@@ -1517,10 +1517,9 @@ implements Pile<E>, HasAssociations.Mixin
 			__beginTransaction(invalidate);
 		}
 
-		if(wasValid)
-			__scheduleRecomputation(true);
 
-
+		boolean recomputationWasScheduledOrOngoing;
+		boolean recomputationWasScout;
 		synchronized (mutex) {
 			if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
 				System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
@@ -1545,13 +1544,17 @@ implements Pile<E>, HasAssociations.Mixin
 				}
 			}
 			dependencyTransactions++;
-
-
+			recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
+			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
 		}
 		if(wasValid) {
 			fireDeepRevalidate();
 		}
+		
 		cancelPendingRecomputation(true);
+
+		if(wasValid | recomputationWasScheduledOrOngoing)
+			__scheduleRecomputation(true, recomputationWasScout && !wasValid);
 
 		//		boolean scout = false;
 		//		if(recompute!=null && recompute.useDependencyScoutingOnBeginningChange() && recompute.useDependencyScoutingIfInvalid(null)) {
@@ -1576,6 +1579,66 @@ implements Pile<E>, HasAssociations.Mixin
 		////			scheduleRecomputation(false);
 		//			startPendingRecompute(true);
 		//		}
+	}
+	@Override
+	public void escalateDependencyChange(Dependency d) {
+		//		if(DE && dc!=null) dc.dependencyBeginsChanging(this, d, isValidAsync());			
+		//		boolean selWasValid = 
+
+		assert !Thread.holdsLock(mutex);
+		////synchronized (schedulingMutex) 
+
+
+		boolean recomputationWasScheduledOrOngoing;
+//		boolean recomputationWasScout;
+		boolean wasValid;
+		synchronized (mutex) {
+			if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
+				System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
+			}
+			wasValid = valid;
+			if(valid)
+				moveValueToOldValue();
+
+			invalidated=false;
+			if(changingDependencies != null && changingDependencies.contains(d)) {
+				try {
+					throw new IllegalStateException("Dependency was not changing");
+				}catch(IllegalStateException x) {
+					x.printStackTrace();
+				}
+			}
+			recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
+//			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
+
+			if(informed!=null && wasValid) {
+				assert !Thread.holdsLock(informQueue);
+				// assert !Thread.holdsLock(informRunnerMutex);
+				if(ET_TRACE && traceEnabledFor(this))trace("schedule informing of dependers that I have become invalid");
+				//			StackTraceElement[] cause = Thread.currentThread().getStackTrace();
+				synchronized (informQueue) {
+					informQueue.add(()->{
+						if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers that I have become invalid");
+						if(informed==null)
+							return;
+						//					cause.clone();
+						for(Depender d2: informed) {
+							d2.escalateDependencyChange(this);
+						}
+
+					});
+				}
+			}
+			
+		}
+		fireDeepRevalidate();
+		
+		cancelPendingRecomputation(true);
+
+		if(recomputationWasScheduledOrOngoing)
+			__scheduleRecomputation(true);
+
+		
 	}
 
 

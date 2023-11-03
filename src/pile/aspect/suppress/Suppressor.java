@@ -289,7 +289,7 @@ public interface Suppressor extends SafeCloseable, Runnable{
 			}
 			if(c!=null) {
 				for(Suppressor s: c)
-					StandardExecutors.safe(s::release);
+					StandardExecutors.safe(s);
 				return true;
 			}else {
 				return false;

@@ -1596,18 +1596,20 @@ implements Pile<E>, HasAssociations.Mixin
 			if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
 				System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 			}
-			wasValid = valid;
-			if(valid)
-				moveValueToOldValue();
-
-			invalidated=false;
-			if(changingDependencies != null && changingDependencies.contains(d)) {
+			if(changingDependencies == null || !changingDependencies.contains(d)) {
 				try {
 					throw new IllegalStateException("Dependency was not changing");
 				}catch(IllegalStateException x) {
 					x.printStackTrace();
 				}
+				return;
 			}
+			wasValid = valid;
+			if(valid)
+				moveValueToOldValue();
+
+			invalidated=false;
+
 			recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
 //			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
 

@@ -78,6 +78,7 @@ public class Piles {
 	private final static Logger log=Logger.getLogger("Values");
 
 	private static ThreadLocal<Boolean> shouldFireDeepRevalidateOnSet=new ThreadLocal<>();
+	private static ThreadLocal<Boolean> shouldDeepRevalidate=new ThreadLocal<>();
 
 	
 	public static final ConstantBool TRUE = constant(true);
@@ -2632,6 +2633,18 @@ public class Piles {
 		Boolean old = shouldFireDeepRevalidateOnSet.get();
 		MockBlock ret = MockBlock.closeOnly(()->shouldFireDeepRevalidateOnSet.set(old));
 		shouldFireDeepRevalidateOnSet.set(should);
+		return ret;
+	}
+	public static boolean shouldDeepRevalidate() {
+		return !Boolean.FALSE.equals(shouldDeepRevalidate.get());
+	}
+	public static MockBlock dontDeepRevalidate() {
+		return withShouldDeepRevalidate(false);
+	}
+	public static MockBlock withShouldDeepRevalidate(Boolean should) {
+		Boolean old = shouldDeepRevalidate.get();
+		MockBlock ret = MockBlock.closeOnly(()->shouldDeepRevalidate.set(old));
+		shouldDeepRevalidate.set(should);
 		return ret;
 	}
 }

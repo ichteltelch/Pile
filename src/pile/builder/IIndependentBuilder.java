@@ -14,10 +14,11 @@ import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteListenValue;
 import pile.aspect.listen.ValueListener;
-import pile.aspect.suppress.Suppressor;
+import pile.aspect.suppress.MockBlock;
 import pile.impl.AbstractReadListenDependency;
 import pile.impl.DebugCallback;
 import pile.impl.Independent;
+import pile.impl.Piles;
 import pile.relation.CoupleEqual;
 import pile.utils.WeakCleanupWithRunnable;
 
@@ -190,7 +191,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 			if(leader.isValid()) {
 				try {
 					E value = leader.getValidOrThrow();
-					try(Suppressor _s = follower.suppressDeepRevalidation()){
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
 						setter.accept(value);
 					}
 				}catch(InvalidValueException x) {
@@ -244,7 +245,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 			if(leader.isValid())
 				try {
 					E value = leader.getValidOrThrow();
-					try(Suppressor _s = follower.suppressDeepRevalidation()){
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
 						setter.accept(value);
 					}
 				}catch(InvalidValueException x) {

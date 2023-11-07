@@ -7,8 +7,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import pile.aspect.Dependency;
-import pile.aspect.WriteValue;
 import pile.aspect.ReadValue.InvalidValueException;
+import pile.aspect.WriteValue;
 import pile.aspect.combinations.ReadDependency;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
@@ -21,8 +21,8 @@ import pile.aspect.recompute.GenericDependencyRecorder;
 import pile.aspect.recompute.Recomputation;
 import pile.aspect.recompute.Recomputations;
 import pile.aspect.suppress.MockBlock;
-import pile.aspect.suppress.Suppressor;
 import pile.impl.AbstractReadListenDependency;
+import pile.impl.Piles;
 import pile.impl.SealPile;
 import pile.specialized_bool.combinations.ReadListenValueBool;
 import pile.utils.Functional;
@@ -469,7 +469,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					try(Suppressor _s = follower.suppressDeepRevalidation()){
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
 						setter.set(value);
 					}
 				} catch (InvalidValueException x) {
@@ -535,7 +535,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					try(Suppressor _s = follower.suppressDeepRevalidation()){
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
 						setter.accept(value);
 					}
 				} catch (InvalidValueException x) {
@@ -606,7 +606,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					try(Suppressor _s = follower.suppressDeepRevalidation()){
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
 						setter.accept(value);
 					}
 				} catch (InvalidValueException e) {
@@ -680,7 +680,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 				try {
 					E value;
 					value = leader.getValidOrThrow();
-					try(Suppressor _s = follower.suppressDeepRevalidation()){
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
 						setter.accept(value);
 					}
 				} catch (InvalidValueException e) {

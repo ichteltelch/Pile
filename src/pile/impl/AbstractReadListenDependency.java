@@ -257,7 +257,13 @@ ListenValue.Managed{
 			//ListenerManager
 			return;
 		}
-		getListenerManager().fireValueChange();
+		if(Piles.shouldDeepRevalidate()) {
+			getListenerManager().fireValueChange();
+		}else {
+			try(MockBlock b = Piles.withShouldDeepRevalidate(true)){ //TODO: avoid allocation
+				getListenerManager().fireValueChange();
+			}
+		}
 	}
 	@Override
 	public void __addDepender(Depender d, boolean propagateInvalidity) {
@@ -1698,6 +1704,8 @@ ListenValue.Managed{
 	protected void fireDeepRevalidate() {
 		if(DE && dc!=null)
 			dc.fireDeepRevalidate(this);
+		if(!Piles.shouldDeepRevalidate())
+			return;
 		ArrayList<Depender> fireTo;
 		synchronized (mutex) {
 			if(deepRevalidationSuppressors>0)

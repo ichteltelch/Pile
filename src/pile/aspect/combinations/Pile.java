@@ -171,5 +171,6 @@ AutoValidationSuppressible.Single
 			StandardExecutors.unlimited().execute(this::get);
 		}
 	}
+	public boolean isSealed();
 }
 

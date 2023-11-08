@@ -3397,6 +3397,10 @@ implements Pile<E>, HasAssociations.Mixin
 		owner = o;
 	}
 
+	@Override
+	public boolean isSealed() {
+		return false;
+	}
 	{
 		if(DebugEnabled.ERROR_ON_CREATE_IN_DYNAMIC_RECOMPUTATION) {
 			DependencyRecorder recorder = Recomputations.getCurrentRecorder();

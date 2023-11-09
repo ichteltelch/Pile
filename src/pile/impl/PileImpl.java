@@ -1517,6 +1517,8 @@ implements Pile<E>, HasAssociations.Mixin
 			__beginTransaction(invalidate);
 		}
 
+		if(wasValid)
+			__scheduleRecomputation(true);
 
 		boolean recomputationWasScheduledOrOngoing;
 		boolean recomputationWasScout;
@@ -1553,8 +1555,8 @@ implements Pile<E>, HasAssociations.Mixin
 		
 		cancelPendingRecomputation(true);
 
-		if(wasValid | recomputationWasScheduledOrOngoing)
-			__scheduleRecomputation(true, recomputationWasScout && !wasValid);
+		if(recomputationWasScheduledOrOngoing)
+			__scheduleRecomputation(true, recomputationWasScout || this.recompute.useDependencyScouting() && !wasValid);
 
 		//		boolean scout = false;
 		//		if(recompute!=null && recompute.useDependencyScoutingOnBeginningChange() && recompute.useDependencyScoutingIfInvalid(null)) {

@@ -1380,6 +1380,15 @@ implements Pile<E>, HasAssociations.Mixin
 				if(finished)
 					return;
 			}
+			/*
+			StandardExecutors.unlimited().execute(()->{
+				__dependOnRecorded(outer, rec);
+			});
+			*/
+			__dependOnRecorded(outer, rec);
+
+		}
+		private void __dependOnRecorded(PileImpl<?> outer, HashSet<Dependency> rec) {
 			if(remove!=null) {
 				for(Dependency d: remove) {
 					if(outer.recompute==null || !outer.recompute.mayRemoveDynamicDependency(d, outer)) {
@@ -1411,7 +1420,6 @@ implements Pile<E>, HasAssociations.Mixin
 				}
 				outer.__thisNeedsDeepRevalidate(needDeepRevalidate);
 			}
-
 		}
 		@Override
 		public void enterDelayedMode() {
@@ -1552,7 +1560,7 @@ implements Pile<E>, HasAssociations.Mixin
 		if(wasValid) {
 			fireDeepRevalidate();
 		}
-		
+
 		cancelPendingRecomputation(true);
 
 		if(recomputationWasScheduledOrOngoing)
@@ -1592,7 +1600,7 @@ implements Pile<E>, HasAssociations.Mixin
 
 
 		boolean recomputationWasScheduledOrOngoing;
-//		boolean recomputationWasScout;
+		//		boolean recomputationWasScout;
 		boolean wasValid;
 		synchronized (mutex) {
 			if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
@@ -1613,7 +1621,7 @@ implements Pile<E>, HasAssociations.Mixin
 			invalidated=false;
 
 			recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
-//			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
+			//			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
 
 			if(informed!=null && wasValid) {
 				assert !Thread.holdsLock(informQueue);
@@ -1633,16 +1641,16 @@ implements Pile<E>, HasAssociations.Mixin
 					});
 				}
 			}
-			
+
 		}
 		fireDeepRevalidate();
-		
+
 		cancelPendingRecomputation(true);
 
 		if(recomputationWasScheduledOrOngoing)
 			__scheduleRecomputation(true);
 
-		
+
 	}
 
 

@@ -371,6 +371,9 @@ ListenValue.Managed{
 
 								if(timeElapsed>2500 & didntWarnYet) {
 									didntWarnYet=false;
+									if(DE) {
+										DebugEnabled.requestStop(someThreadIsWorkingInformQueue, this);
+									}
 									try {
 										throw new RuntimeException("Stack trace");
 									}catch(RuntimeException x) {
@@ -410,6 +413,8 @@ ListenValue.Managed{
 					}
 					if(run==null) {
 						assert amRunning;
+						if(DE)
+							DebugEnabled.stopIfRequested();
 						synchronized (informRunnerMutex) {
 //							if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
 //								System.out.println();
@@ -493,6 +498,8 @@ ListenValue.Managed{
 		}
 		if(wiq)
 			__workInformQueue();
+//			StandardExecutors.unlimited().execute(this::__workInformQueue);
+			
 	}
 
 	/**

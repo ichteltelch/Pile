@@ -3,6 +3,7 @@ package pile.interop.debug;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -120,4 +121,35 @@ public class DebugEnabled {
 	 * reactive values if they run during a dependency recording {@link Recomputation}.
 	 */
 	public static final boolean ERROR_ON_CREATE_IN_DYNAMIC_RECOMPUTATION = true;
+	
+	static final private WeakHashMap<Thread, Object> STOP_REQUESTED = new WeakHashMap<>();
+	
+	public static boolean isStopRequested(Thread t) {
+		synchronized (STOP_REQUESTED) {
+			return STOP_REQUESTED.containsKey(t);
+		}
+	}
+	public static void requestStop(Thread t, Object o) {
+		synchronized (STOP_REQUESTED) {
+			STOP_REQUESTED.put(t, o);
+		}
+	}
+	public static Object clearStopRequested(Thread t) {
+		synchronized (STOP_REQUESTED) {
+            return STOP_REQUESTED.remove(t);
+        }
+	}
+	public static void requestStop(Thread t) {
+		requestStop(t, null);
+	}
+	public static void stopIfRequested(Thread t) {
+		if(isStopRequested(t)) {
+            Object message = clearStopRequested(t);
+            System.out.println(message);
+		}
+	}
+	public static void stopIfRequested() {
+		stopIfRequested(Thread.currentThread());
+	}
+	
 }

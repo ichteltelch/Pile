@@ -19,7 +19,7 @@ import pile.utils.Nonreentrant;
  *
  * @param <E>
  */
-public class CoupleEqual<E> {
+public class CoupleEqual<E> extends AbstractRelation{
 	public enum Mode{
 		/**
 		 * The default mode: The coupling is bidirectional.
@@ -46,6 +46,7 @@ public class CoupleEqual<E> {
 	final Mode mode;
 	Nonreentrant nr = new Nonreentrant();
 	protected final ValueListener vl=nr.<ValueEvent>fixed(this::sync, Functional.NOP)::accept;
+
 	private void sync(ValueEvent e) {
 		if(!isEnabledPrim())
 			return;
@@ -108,14 +109,14 @@ public class CoupleEqual<E> {
 		this.op2=op2;
 		removeFromOp1=op1.addWeakValueListener(vl);
 		removeFromOp2=op2.addWeakValueListener(vl);
+
 		if(initSync)
 			vl.valueChanged(null);
 	}
-	/**
-	 * 
-	 * @return Whether this coupling is active
-	 */
-	public boolean isEnabledPrim() {
-		return true;
+	
+	@Override
+	protected ValueListener getListener() {
+		return vl;
 	}
+	
 }

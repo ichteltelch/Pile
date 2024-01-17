@@ -4,14 +4,13 @@ import pile.aspect.Sealable;
 import pile.aspect.combinations.ReadWriteListenValue;
 import pile.aspect.listen.ValueListener;
 import pile.impl.Piles;
-import pile.specialized_bool.combinations.ReadListenDependencyBool;
 
 /**
  * Objects of this class maintain an implication between two reactive booleans.
  * @author bb
  *
  */
-public class Implication{
+public class Implication extends AbstractRelation{
 	final ReadWriteListenValue<Boolean> premise; 
 	final ReadWriteListenValue<Boolean> conclusion;
 	final Boolean onConflictKeepPremise;
@@ -63,7 +62,10 @@ public class Implication{
 		removeFromPremise = premise.addWeakValueListener(vl);
 		removeFromConclusion = conclusion.addWeakValueListener(vl);
 		if(isEnabled()!=Piles.TRUE) {
-			isEnabled().addValueListener(e->vl.valueChanged(null));
+			isEnabled().addValueListener(e->{
+				if(!shouldActOnlyOnOperandChanges())
+					vl.valueChanged(null);	
+			});
 		}
 		vl.valueChanged(null);
 	}
@@ -79,6 +81,10 @@ public class Implication{
 	}
 
 
+	@Override
+	protected ValueListener getListener() {
+		return vl;
+	}
 
 
 
@@ -91,18 +97,5 @@ public class Implication{
 
 
 
-	/**
-	 * 
-	 * @return whether the relation is active, as a primitive boolean.
-	 */
-	public boolean isEnabledPrim() {
-		return true;
-	}
-	/**
-	 * @return whether the relation is active, as a reactive boolean.
-	 */
-	public ReadListenDependencyBool isEnabled() {
-		return Piles.TRUE;
-	}
 
 }

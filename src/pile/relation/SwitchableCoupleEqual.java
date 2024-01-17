@@ -21,9 +21,8 @@ public class SwitchableCoupleEqual<E> extends CoupleEqual<E> implements Switchab
 		super(op1, op2, false, mode);
 		switcher = new ImplSwitchableRelation();
 		switcher.setShouldBeEnabled(shouldBeEnabled);
-		if(switcher.isEnabled().isTrue())
-			vl.valueChanged(null);
-		switcher.isEnabled().addValueListener(e->vl.valueChanged(null));
+		
+		installEnabledListener();
 		
 	}
 
@@ -51,5 +50,23 @@ public class SwitchableCoupleEqual<E> extends CoupleEqual<E> implements Switchab
 	@Override
 	public boolean isEnabledPrim() {
 		return switcher!=null && switcher.isEnabled().isTrue();
+	}
+
+
+
+	@Override
+	public SwitchableCoupleEqual<E> onlyOnChanges(boolean onlyOnChanges) {
+		switcher.onlyOnChanges(onlyOnChanges);
+		return this;
+	}
+	public SwitchableCoupleEqual<E> onlyOnChanges() {
+		return onlyOnChanges(true);
+	}
+
+
+
+	@Override
+	public boolean shouldActOnlyOnOperandChanges() {
+		return switcher.shouldActOnlyOnOperandChanges();
 	}
 }

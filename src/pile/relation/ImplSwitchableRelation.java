@@ -24,6 +24,19 @@ public class ImplSwitchableRelation implements SwitchableRelation<ReadListenValu
 	protected ReadListenValue<Boolean> shouldBeEnabled = Piles.TRUE;
 
 	private Consumer<? super Boolean> setEnabled;
+	boolean onlyOnChanges;
+	
+	public SwitchableRelation<ReadListenValue<Boolean>> onlyOnChanges(boolean onlyOnChanges) {
+		this.onlyOnChanges = onlyOnChanges;
+		if(!onlyOnChanges) {
+			isEnabled.fireValueChange();
+		}
+        return this;
+	}
+	public SwitchableRelation<ReadListenValue<Boolean>> onlyOnChanges() {
+		return onlyOnChanges(true);
+	}
+	
 	protected final IndependentBool isEnabled = Piles.independent(true)
 			.giveSetter(s->setEnabled=s)
 			.seal()
@@ -91,6 +104,10 @@ public class ImplSwitchableRelation implements SwitchableRelation<ReadListenValu
 	@Override
 	public ReadListenDependencyBool isEnabled() {
 		return isEnabled;
+	}
+	
+	public boolean shouldActOnlyOnOperandChanges() {
+		return onlyOnChanges;
 	}
 	
 	@Override

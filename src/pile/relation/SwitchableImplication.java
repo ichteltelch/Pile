@@ -20,9 +20,8 @@ public class SwitchableImplication extends Implication implements SwitchableRela
 		super(premise, conclusion, onConflictKeepPremise);
 		switcher = new ImplSwitchableRelation();
 		switcher.setShouldBeEnabled(shouldBeEnabled);
-		if(switcher.isEnabled().isTrue())
-			vl.valueChanged(null);
-		switcher.isEnabled().addValueListener(e->vl.valueChanged(null));
+
+		installEnabledListener();
 	}
 	@Override
 	public Suppressor disable() {
@@ -44,6 +43,19 @@ public class SwitchableImplication extends Implication implements SwitchableRela
 	public void setShouldBeEnabled(ReadListenValue<Boolean> sbe) {
 		switcher.setShouldBeEnabled(sbe);
 	}
+	@Override
+	public SwitchableImplication onlyOnChanges(boolean onlyOnChanges) {
+		switcher.onlyOnChanges(onlyOnChanges);
+		return this;
+	}
 
+	public SwitchableImplication onlyOnChanges() {
+		return onlyOnChanges(true);
+	}
+
+	@Override
+	public boolean shouldActOnlyOnOperandChanges() {
+		return switcher.shouldActOnlyOnOperandChanges();
+	}
 
 }

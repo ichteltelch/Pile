@@ -1,5 +1,6 @@
 package pile.relation;
 
+import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.suppress.Suppressor;
 import pile.specialized_bool.combinations.ReadListenDependencyBool;
 
@@ -41,4 +42,10 @@ public interface SwitchableRelation<Sw> {
 	 * @return
 	 */	
 	public void setShouldBeEnabled(Sw sbe);
+	
+	public SwitchableRelation<ReadListenValue<Boolean>> onlyOnChanges(boolean onlyOnChanges);
+	public default SwitchableRelation<ReadListenValue<Boolean>> onlyOnChanges() {
+		return onlyOnChanges(true);
+	}
+	public boolean shouldActOnlyOnOperandChanges();
 }

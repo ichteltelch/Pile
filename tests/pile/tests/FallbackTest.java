@@ -67,7 +67,7 @@ public class FallbackTest {
 		Thread.sleep(200);
 
 		PileInt choice = 
-				Piles.firstValidInt(v1sum, v2, v3).setName("choice");
+				Piles.firstValidInt(null, v1sum, v2, v3).setName("choice");
 		SealPile<ReadDependency<Integer>> metaChoice=
 				Piles.firstValidV(v1sum, v2, v3);
 		metaChoice.setName("metaChoice");

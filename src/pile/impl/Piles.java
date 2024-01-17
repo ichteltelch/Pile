@@ -1,6 +1,7 @@
 package pile.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -1748,61 +1749,72 @@ public class Piles {
 	 * Make a {@link Sealable#seal() seal}ed {@link SealPile} that takes on the value of the 
 	 * first {@link ReadValue#isValid() valid} value in a sequence of values.
 	 * @param <E>
-	 * @param values
+	 * @param
+	 * @param writableFirst Optionally the first value in the sequence, if you want writes to be redirected to it
+	 * @param values The (remaining) sequence
 	 * @return
 	 */
 	@SafeVarargs
 	public static <E> SealPile<E> firstValid(
+			ReadWriteListenDependency<E> writableFirst,
 			ReadListenDependency<? extends E>... values){
-		return makeFirstValid(new SealPile<>(), values);
+		return makeFirstValid(new SealPile<>(), writableFirst, values);
 	}
 	/**
 	 * Make a {@link Sealable#seal() seal}ed {@link SealBool} that takes on the value of the 
 	 * first {@link ReadValue#isValid() valid} value in a sequence of boolean values.
 	 * @param <E>
-	 * @param values
+	 * @param writableFirst Optionally the first value in the sequence, if you want writes to be redirected to it
+	 * @param values The (remaining) sequence
 	 * @return
 	 */
 	@SafeVarargs
 	public static SealBool firstValidBool(
+			ReadWriteListenDependency<Boolean> writableFirst,
 			ReadListenDependency<? extends Boolean>... values){
-		return makeFirstValid(new SealBool(), values);
+		return makeFirstValid(new SealBool(), writableFirst, values);
 	}
 	/**
 	 * Make a {@link Sealable#seal() seal}ed {@link SealDouble} that takes on the value of the 
 	 * first {@link ReadValue#isValid() valid} value in a sequence of double precision values.
 	 * @param <E>
-	 * @param values
+	 * @param writableFirst Optionally the first value in the sequence, if you want writes to be redirected to it
+	 * @param values The (remaining) sequence
 	 * @return
 	 */
 	@SafeVarargs
-	public static SealDouble firstValidDouble(	
+	public static SealDouble firstValidDouble(
+			ReadWriteListenDependency<Double> writableFirst,			
 			ReadListenDependency<? extends Double>... values){
-		return makeFirstValid(new SealDouble(), values);
+		return makeFirstValid(new SealDouble(), writableFirst, values);
 	}
 	/**
 	 * Make a {@link Sealable#seal() seal}ed {@link SealString} that takes on the value of the 
 	 * first {@link ReadValue#isValid() valid} value in a sequence of {@link String} values.
 	 * @param <E>
-	 * @param values
+	 * @param writableFirst Optionally the first value in the sequence, if you want writes to be redirected to it
+	 * @param values The (remaining) sequence
 	 * @return
 	 */
 	@SafeVarargs
 	public static SealString firstValidString(	
+			ReadWriteListenDependency<String> writableFirst,			
 			ReadListenDependency<? extends String>... values){
-		return makeFirstValid(new SealString(), values);
+		return makeFirstValid(new SealString(), writableFirst, values);
 	}
 	/**
 	 * Make a {@link Sealable#seal() seal}ed {@link SealInt} that takes on the value of the 
 	 * first {@link ReadValue#isValid() valid} value in a sequence of integer values.
 	 * @param <E>
-	 * @param values
+	 * @param writableFirst Optionally the first value in the sequence, if you want writes to be redirected to it
+	 * @param values The (remaining) sequence
 	 * @return
 	 */
 	@SafeVarargs
 	public static SealInt firstValidInt(
+			ReadWriteListenDependency<Integer> writableFirst,			
 			ReadListenDependency<? extends Integer>...values){
-		return makeFirstValid(new SealInt(), values);
+		return makeFirstValid(new SealInt(), writableFirst, values);
 	}
 	/**
 	 * Configure an un{@link Sealable#seal() seal}ed {@link SealPile} to take on the value of the 
@@ -1810,15 +1822,24 @@ public class Piles {
 	 * @param <V>
 	 * @param <E>
 	 * @param out The {@link SealPile}, which will get {@link Sealable#seal() seal}ed
-	 * @param values0
+	 * @param writableFirst Optionally the first value in the sequence, if you want writes to be redirected to it
+	 * @param values0 The (remaining) sequence
 	 * @return
 	 */
 	@SafeVarargs
 	public static <V extends SealPile<E>, E> V makeFirstValid(
 			V out, 
-			ReadListenDependency<? extends E>... values0)
+			ReadWriteListenDependency<E> writableFirst,
+			ReadListenDependency<? extends E>... _values0)
 	{
-		ReadListenDependency<? extends E>[] values = values0.clone();
+		ReadListenDependency<? extends E>[] values;
+		if(writableFirst==null) {
+			values = _values0.clone();
+		}else {
+			values = Arrays.copyOf(_values0, _values0.length+1);
+            values[0] = writableFirst;
+            System.arraycopy(_values0, 0, values, 1, _values0.length);
+		}
 		HashSet<ReadDependency<? extends E>> distinct=new HashSet<>();
 		int shift = 0;
 		for(int i=0; i<values.length; ++i) {
@@ -1836,7 +1857,7 @@ public class Piles {
 		}
 
 		Depender pd = out.getPrivilegedDepender();
-		return new SealPileBuilder<V, E>(out)
+		SealPileBuilder<V, E> builder = new SealPileBuilder<V, E>(out)
 				.recompute(new Consumer<Recomputation<E>>(){
 					ReadDependency<? extends E> current=null;
 					ReadListenDependencyBool currentValidity=null;
@@ -1953,8 +1974,15 @@ public class Piles {
 						});
 					}
 				})
-				//				.dontRetry()
-				.seal()
+//				.dontRetry()
+				;
+		if(writableFirst!=null)
+			builder.seal(v->{
+				writableFirst.set(v);
+			});
+		else
+			builder.seal();
+		return builder
 				.build();
 	}
 	/**
@@ -2098,8 +2126,22 @@ public class Piles {
 	 * @return
 	 */
 	public static <E> SealPile<E> fallback(ReadListenDependency<? extends E> v, E def){
+		return makeFirstValid(new SealPile<>(), null, v, constant(def));
+	}
+	/**
+	 * Make a {@link Sealable#seal() seal}ed {@link SealPile}
+	 * that takes on the same value as another if that value is {@link ReadValue#isValid() valid}
+	 * and a default value if it is not. 
+	 * Writes to the returned reactive value will be redirected to the given {@link ReadWriteListenDependency}.
+	 * @param <E>
+	 * @param v
+	 * @param def
+	 * @return
+	 */
+	public static <E> SealPile<E> fallback(ReadWriteListenDependency<E> v, E def){
 		return makeFirstValid(new SealPile<>(), v, constant(def));
 	}
+	/**
 	/**
 	 * Make a {@link Sealable#seal() seal}ed {@link SealBool}
 	 * that takes on the same value as another if that value is {@link ReadValue#isValid() valid}
@@ -2109,6 +2151,18 @@ public class Piles {
 	 * @return
 	 */
 	public static SealBool fallback(ReadListenDependency<? extends Boolean> v, Boolean def){
+		return makeFirstValid(new SealBool(), null, v, constant(def));
+	}
+	/**
+	 * Make a {@link Sealable#seal() seal}ed {@link SealBool}
+	 * that takes on the same value as another if that value is {@link ReadValue#isValid() valid}
+	 * and a default value if it is not. 
+	 * Writes to the returned reactive value will be redirected to the given {@link ReadWriteListenDependency}.
+	 * @param v
+	 * @param def
+	 * @return
+	 */
+	public static SealBool fallback(ReadWriteListenDependency<Boolean> v, Boolean def){
 		return makeFirstValid(new SealBool(), v, constant(def));
 	}
 	/**
@@ -2120,6 +2174,18 @@ public class Piles {
 	 * @return
 	 */
 	public static SealInt fallback(ReadListenDependency<? extends Integer> v, Integer def){
+		return makeFirstValid(new SealInt(), null, v, constant(def));
+	}
+	/**
+	 * Make a {@link Sealable#seal() seal}ed {@link SealInt}
+	 * that takes on the same value as another if that value is {@link ReadValue#isValid() valid}
+	 * and a default value if it is not. 
+	 * Writes to the returned reactive value will be redirected to the given {@link ReadWriteListenDependency}.
+	 * @param v
+	 * @param def
+	 * @return
+	 */
+	public static SealInt fallback(ReadWriteListenDependency<Integer> v, Integer def){
 		return makeFirstValid(new SealInt(), v, constant(def));
 	}
 	/**
@@ -2131,6 +2197,18 @@ public class Piles {
 	 * @return
 	 */
 	public static SealDouble fallback(ReadListenDependency<? extends Double> v, Double def){
+		return makeFirstValid(new SealDouble(), null, v, constant(def));
+	}
+	/**
+	 * Make a {@link Sealable#seal() seal}ed {@link SealDouble}
+	 * that takes on the same value as another if that value is {@link ReadValue#isValid() valid}
+	 * and a default value if it is not. 
+	 * Writes to the returned reactive value will be redirected to the given {@link ReadWriteListenDependency}.
+	 * @param v
+	 * @param def
+	 * @return
+	 */
+	public static SealDouble fallback(ReadWriteListenDependency<Double> v, Double def){
 		return makeFirstValid(new SealDouble(), v, constant(def));
 	}
 
@@ -2143,6 +2221,18 @@ public class Piles {
 	 * @return
 	 */
 	public static SealString fallback(ReadListenDependency<? extends String> v, String def){
+		return makeFirstValid(new SealString(), null, v, constant(def));
+	}
+	/**
+	 * Make a {@link Sealable#seal() seal}ed {@link SealString}
+	 * that takes on the same value as another if that value is valid
+	 * and a default value if it is not. 
+	 * Writes to the returned reactive value will be redirected to the given {@link ReadWriteListenDependency}.
+	 * @param v
+	 * @param def
+	 * @return
+	 */
+	public static SealString fallback(ReadWriteListenDependency<String> v, String def){
 		return makeFirstValid(new SealString(), v, constant(def));
 	}
 

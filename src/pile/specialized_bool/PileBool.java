@@ -1447,11 +1447,13 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 		 return Piles
 				 .sealedNoInitBool()
 				 .recomputeS(()->{
-					 Boolean i = input.get();
-					 return i==null?null:(i^Boolean.TRUE.equals(control.get()));
+					Boolean i = input.get();
+					boolean controlValue = Boolean.TRUE.equals(control.get());
+					return i==null?null:(i^controlValue);
 				 })
 				 .seal(i->{
-					 input.set(i==null?null:(i^Boolean.TRUE.equals(control.get())));
+					 boolean controlValue = Boolean.TRUE.equals(control.get());
+					 input.set(i==null?null:(i^controlValue));
 				 })
 				 .parent(input)
 				 .name(input.dependencyName()+" <+ "+control.dependencyName())

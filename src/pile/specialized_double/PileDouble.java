@@ -618,7 +618,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 
 		/**
 		 * Make a {@link IBuilder#configure(Consumer) configurator} 
-		 * that sets {@link Pile} so that it computes itseld
+		 * that sets {@link Pile} so that it computes itself
 		 * as the result of aggregating all its {@link Dependency Dependencies}
 		 * that are instances of {@link ReadValueDouble} using the given monoid. 
 		 * @param <V>
@@ -651,16 +651,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 
 	}
 
-	/**
-	 * Make a reactive double precision number that computes itself 
-	 * as the sum of its {@link Dependency Dependencies} that are
-	 * also {@link ReadValueDouble} instances.
-	 * @param deps initial {@link Dependency Dependencies}
-	 * @return
-	 */
-	public static PileDoubleImpl dynamicSum(Dependency... deps) {
-		return buildDynamicSum(new PileDoubleImpl()).whenChanged(deps);
-	}
+
 	/**
 	 * Make a reactive double precision number that computes itself 
 	 * as the product of its {@link Dependency Dependencies} that are
@@ -758,6 +749,16 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 	 */
 	public static <V extends PileImpl<Double>> PileBuilder<V, Double> buildDynamicSum(V val){
 		return new PileBuilder<>(val).configure(DoubleMonoidOp.SUM_CONFIG);
+	}
+	/**
+	 * Make a reactive double precision number that computes itself 
+	 * as the sum of its {@link Dependency Dependencies} that are
+	 * also {@link ReadValueDouble} instances.
+	 * @param deps initial {@link Dependency Dependencies}
+	 * @return
+	 */
+	public static PileDoubleImpl dynamicSum(Dependency... deps) {
+		return buildDynamicSum(new PileDoubleImpl()).whenChanged(deps);
 	}
 	/**
 	 * Make a {@link PileBuilder} configured to make the given value compute itself 

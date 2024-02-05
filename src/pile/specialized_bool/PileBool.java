@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 
+import pile.aspect.Dependency;
 import pile.aspect.Depender;
 import pile.aspect.ReadValue;
 import pile.aspect.ValueBracket;
@@ -22,11 +23,14 @@ import pile.aspect.combinations.Pile;
 import pile.aspect.combinations.ReadDependency;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadWriteDependency;
+import pile.builder.FulfillInvalid;
+import pile.builder.IBuilder;
 import pile.builder.IndependentBuilder;
 import pile.builder.PileBuilder;
 import pile.builder.SealPileBuilder;
 import pile.impl.Independent;
 import pile.impl.MutRef;
+import pile.impl.PileImpl;
 import pile.impl.Piles;
 import pile.impl.Piles.AggregationMonoid;
 import pile.impl.SealPile;
@@ -35,6 +39,7 @@ import pile.specialized_bool.combinations.ReadDependencyBool;
 import pile.specialized_bool.combinations.ReadListenDependencyBool;
 import pile.specialized_bool.combinations.ReadValueBool;
 import pile.specialized_bool.combinations.ReadWriteListenDependencyBool;
+import pile.specialized_double.combinations.ReadValueDouble;
 
 public interface PileBool 
 extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
@@ -1578,7 +1583,114 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 						 last.val.cancel(mayInterrupt);
 				 })
 				 .whenChanged(condition);
-
-
 	 }
+	 
+		/**
+		 * Define various monoids for dynamic aggregation over the dependencies.
+		 * @author bb
+		 *
+		 */
+		public static interface BoolMonoidOp {
+			public static final Boolean OR_NEUTRAL = Boolean.FALSE;
+			public static final Boolean AND_NEUTRAL = Boolean.TRUE;
+			public static final Boolean XOR_NEUTRAL = Boolean.FALSE;
+			public static final BoolMonoidOp AND = (a, b)->(a&&b);
+			public static final BoolMonoidOp OR = (a, b)->(a||b);
+			public static final BoolMonoidOp XOR = (a, b)->(a^b);
+			public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> OR_CONFIG = configurator(OR_NEUTRAL, OR);
+			public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> AND_CONFIG = configurator(AND_NEUTRAL, AND);
+			public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> XOR_CONFIG = configurator(XOR_NEUTRAL, XOR);
+
+			public boolean apply(boolean a, boolean b);
+
+			/**
+			 * Make a {@link IBuilder#configure(Consumer) configurator} 
+			 * that sets {@link Pile} so that it computes itself
+			 * as the result of aggregating all its {@link Dependency Dependencies}
+			 * that are instances of {@link ReadValueBool} using the given monoid. 
+			 * @param <V>
+			 * @param ifEmpty Value to take if there are no operands; Neutral element of the monoid
+			 * @param op The monoid operation
+			 * @return
+			 */
+			public static 
+			<V extends PileImpl<Boolean>> 
+			Consumer<? super PileBuilder<? extends V,Boolean>> 
+			configurator(Boolean ifEmpty, BoolMonoidOp op){
+				return vb->{vb.recompute(()->{
+					V val = vb.valueBeingBuilt();
+					MutRef<Boolean> result = new MutRef<>();
+					val.giveDependencies(d->{
+						if(d instanceof ReadValueBool) {
+							ReadValueBool dd = (ReadValueBool)d;
+							Boolean dv = dd.get();
+							if(dv==null)
+								throw new FulfillInvalid("One of the operands is null");
+							Boolean rv = result.val;
+							result.val = rv==null?dv:op.apply(rv, dv);
+						}
+					});
+					return result.val==null?ifEmpty:result.val;
+				})
+					.nameIfUnnamed("Dynamic double aggregator");
+				};
+			}
+
+		}
+	 
+		/**
+		 * Make a reactive boolean that computes itself 
+		 * as the disjunction of its {@link Dependency Dependencies} that are
+		 * also {@link ReadValueBool} instances.
+		 * @param deps initial {@link Dependency Dependencies}
+		 * @return
+		 */
+		public static PileBoolImpl dynamicOr(Dependency... deps) {
+			return buildDynamicDisjunction(new PileBoolImpl()).whenChanged(deps);
+		}
+		/**
+		 * Make a {@link PileBuilder} configured to make the given value compute itself 
+		 * as the disjunction of its {@link Dependency Dependencies} that are also
+		 * {@link ReadValueDouble} instances. 
+		 */
+		public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicDisjunction(V val){
+			return new PileBuilder<>(val).configure(BoolMonoidOp.OR_CONFIG);
+		}
+		/**
+		 * Make a reactive boolean that computes itself 
+		 * as the disjunction of its {@link Dependency Dependencies} that are
+		 * also {@link ReadValueBool} instances.
+		 * @param deps initial {@link Dependency Dependencies}
+		 * @return
+		 */
+		public static PileBoolImpl dynamicAnd(Dependency... deps) {
+			return buildDynamicConjunction(new PileBoolImpl()).whenChanged(deps);
+		}
+		/**
+		 * Make a {@link PileBuilder} configured to make the given value compute itself 
+		 * as the disjunction of its {@link Dependency Dependencies} that are also
+		 * {@link ReadValueDouble} instances. 
+		 */
+		public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicConjunction(V val){
+			return new PileBuilder<>(val).configure(BoolMonoidOp.AND_CONFIG);
+		}
+		/**
+		 * Make a reactive boolean that computes itself 
+		 * as the disjunction of its {@link Dependency Dependencies} that are
+		 * also {@link ReadValueBool} instances.
+		 * @param deps initial {@link Dependency Dependencies}
+		 * @return
+		 */
+		public static PileBoolImpl dynamicXor(Dependency... deps) {
+			return buildDynamicXor(new PileBoolImpl()).whenChanged(deps);
+		}
+		/**
+		 * Make a {@link PileBuilder} configured to make the given value compute itself 
+		 * as the disjunction of its {@link Dependency Dependencies} that are also
+		 * {@link ReadValueDouble} instances. 
+		 */
+		public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicXor(V val){
+			return new PileBuilder<>(val).configure(BoolMonoidOp.XOR_CONFIG);
+		}
+	 
 }

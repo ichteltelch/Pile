@@ -2,6 +2,7 @@ package pile.aspect.combinations;
 
 import java.util.Comparator;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleFunction;
@@ -51,10 +52,32 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 	 */
 	public default <F, V extends SealPile<F>> 
 	V _mapSetup(V v, Function<? super E, ? extends F> mapFunction){
+		return _mapBuilder(v, mapFunction)
+				.seal()
+				.build();
+	}
+	/**
+	 * Configure an un-sealed {@link SealPile} to represent the result of mapping this
+	 * {@link ReadDependency} through a function
+	 * @param <F>
+	 * @param <V>
+	 * @param v
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default <F, V extends SealPile<F>> 
+	V _mapSetup(V v, Function<? super E, ? extends F> mapFunction, Consumer<? super SealPileBuilder<V, F>> config){
+		return _mapBuilder(v, mapFunction)
+				.seal()
+				.configure(config)
+				.build();
+	}
+	public default <V extends SealPile<F>, F> SealPileBuilder<V, F> _mapBuilder(V v,
+			Function<? super E, ? extends F> mapFunction) {
 		return new SealPileBuilder<>(v)
-		.seal()
-		.recompute(()->mapFunction.apply(get()))
-		.whenChanged(this);
+				.recompute(()->mapFunction.apply(get()))
+				.dependOn(true, this);
 	}
 	/**
 	 * Map this {@link ReadDependency} through a function
@@ -138,6 +161,100 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 	public default  
 	SealDouble mapToDoubleP(ToDoubleFunction<? super E> mapFunction) {
 		return _mapSetup(new SealDouble(), mapFunction::applyAsDouble);
+	}
+	
+	
+	/**
+	 * Map this {@link ReadDependency} through a function
+	 * @param <F>
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default <F> 
+	SealPile<? extends F> map(Function<? super E, ? extends F> mapFunction, Consumer<? super SealPileBuilder<SealPile<F>, F>> config) {
+		return _mapSetup(new SealPile<>(), mapFunction, config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a Boolean-valued function
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealBool mapToBool(Function<? super E, ? extends Boolean> mapFunction, Consumer<? super SealPileBuilder<SealBool, Boolean>> config) {
+		return _mapSetup(new SealBool(), mapFunction, config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a Boolean-valued function
+	 * given as a Predicate
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealBool mapPrimitive(Predicate<? super E> mapFunction, Consumer<? super SealPileBuilder<SealBool, Boolean>> config) {
+		return _mapSetup(new SealBool(), v->mapFunction.test(v), config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a Integer-valued function
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealInt mapToInt(Function<? super E, ? extends Integer> mapFunction, Consumer<? super SealPileBuilder<SealInt, Integer>> config) {
+		return _mapSetup(new SealInt(), mapFunction, config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a Double-valued function
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealDouble mapToDouble(Function<? super E, ? extends Double> mapFunction, Consumer<? super SealPileBuilder<SealDouble, Double>> config) {
+		return _mapSetup(new SealDouble(), mapFunction, config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a String-valued function
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealString mapToString(Function<? super E, ? extends String> mapFunction, Consumer<? super SealPileBuilder<SealString, String>> config) {
+		return _mapSetup(new SealString(), mapFunction, config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a {@link Predicate} used as a boolean-valued function
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealBool mapToBoolP(Predicate<? super E> mapFunction, Consumer<? super SealPileBuilder<SealBool, Boolean>> config) {
+		return _mapSetup(new SealBool(), mapFunction::test, config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a int-valued function
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealInt mapToIntP(ToIntFunction<? super E> mapFunction, Consumer<? super SealPileBuilder<SealInt, Integer>> config) {
+		return _mapSetup(new SealInt(), mapFunction::applyAsInt, config);
+	}
+	/**
+	 * Map this {@link ReadDependency} through a double-valued function
+	 * @param mapFunction
+	 * @param Additional configuration to be applied to the builder
+	 * @return
+	 */
+	public default  
+	SealDouble mapToDoubleP(ToDoubleFunction<? super E> mapFunction, Consumer<? super SealPileBuilder<SealDouble, Double>> config) {
+		return _mapSetup(new SealDouble(), mapFunction::applyAsDouble, config);
 	}
 	/**
 	 * Query whether this {@link ReadDependency} is guaranteed to never change,
@@ -250,7 +367,7 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 	public default SealBool isUnequalConst(E op2, BiPredicate<? super E, ? super E> eq) {
 		return PileBool.equalityComparison(this, op2, Boolean.FALSE, Boolean.TRUE, eq);
 	}
-	
+
 	/**
 	 * Make an Integer {@link Pile} that reflects the ordering of the wrapped values of this
 	 * {@link ReadDependency} and another. 
@@ -351,7 +468,7 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 	public default SealBool greaterThanOrEqualConst(E op2, Comparator<? super E> order) {
 		return PileBool.greaterThanOrEqual(this, op2, order);
 	}
-	
+
 	/**
 	 * Make a wrapper around this {@link ReadDependency} that reflects its current value but cannot
 	 * be modified
@@ -510,7 +627,7 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 			Function<? super E, ? extends I> extract) {
 		return Piles.<E2>sb().setupWritableField(this, nullable, extract);
 	}
-	
+
 	/**
 	 * Specialization of {@link #writableField(Function)} for {@link Boolean}-valued fields.
 	 */
@@ -567,14 +684,14 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 			Function<? super E, ? extends I> extract) {
 		return PileString.sb().setupWritableField(this, nullable, extract);
 	}
-	
+
 	/**
 	 * Make a value that follows this {@link ReadDependency}'s value, 
 	 * but when it is {@linkplain WriteValue#set(Object) written to},
 	 * it takes on a different value until this {@link ReadDependency} changes again or becomes invalid.
 	 * @return
 	 */
-	
+
 	public default PileImpl<E> overridable() {
 		return Piles.compute(this::get).name(dependencyName()+"*").whenChanged(this);
 	}
@@ -590,5 +707,5 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 	 */
 	public ReadListenDependencyBool nullOrInvalid();
 
-	
+
 }

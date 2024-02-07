@@ -989,6 +989,7 @@ implements Pile<E>, HasAssociations.Mixin
 						//						System.out.println("recorded: "+recorded.stream().map(Dependency::dependencyName).collect(Collectors.toList()));
 						dependOnRecorded(outer, rec);
 					}
+					recording=false;
 					if(!scout)
 						StandardExecutors.safe(onSuccess);
 					restart=scout && !outer.isValid();
@@ -1314,8 +1315,8 @@ implements Pile<E>, HasAssociations.Mixin
 		}
 
 		@Override
-		public boolean isDynamic() {
-			return recording || recorded!=null;
+		public boolean isDynamicRecording() {
+			return recording;// || recorded!=null;
 		}
 		@Override
 		public void recordDependency(Dependency d) {
@@ -3416,7 +3417,7 @@ implements Pile<E>, HasAssociations.Mixin
 			DependencyRecorder recorder = Recomputations.getCurrentRecorder();
 			if(recorder!=null) {
 				Recomputation<?> recomp = recorder.getReceivingRecomputation();
-				if(recomp != null && recomp.isDynamic() && !recomp.isFinished()) {
+				if(recomp != null && recomp.isDynamicRecording() && !recomp.isFinished()) {
 					String msg = "Reactive value created durinc dynamic dependency recording";
 					log.log(Level.WARNING, msg);
 					throw new IllegalStateException(msg);

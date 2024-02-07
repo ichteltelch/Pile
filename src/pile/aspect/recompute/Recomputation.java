@@ -413,8 +413,8 @@ public interface Recomputation<E> extends DependencyRecorder{
 //			back.setThreadNameOnFinish(name);
 //		}
 		@Override
-		public boolean isDynamic() {
-			return back.isDynamic();
+		public boolean isDynamicRecording() {
+			return back.isDynamicRecording();
 		}
 	}
 
@@ -635,7 +635,8 @@ public interface Recomputation<E> extends DependencyRecorder{
 	public void enterDelayedMode();
 	/**
 	 * 
-	 * @return Whether this {@link Recomputation} uses dynamic {@link Dependency} recording
+	 * @return Whether this {@link Recomputation} uses dynamic {@link Dependency} recording.
+	 * Note: This becomes <code>false</code> before the success handler of is run.
 	 */
-	public boolean isDynamic();
+	public boolean isDynamicRecording();
 }

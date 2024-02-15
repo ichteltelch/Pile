@@ -2809,7 +2809,7 @@ implements Pile<E>, HasAssociations.Mixin
 			synchronized (mutex) {
 				localRef = validNull;
 				if (localRef == null) {
-					localRef = new IndependentBool(!__valid() || __value==null);
+					localRef = new IndependentBool(__valid() && __value==null);
 					Consumer<? super Boolean> setter = localRef.makeSetter();
 					setValidNull=v->{
 						assert !Thread.holdsLock(informQueue);

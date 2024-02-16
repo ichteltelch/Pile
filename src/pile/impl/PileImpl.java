@@ -1531,6 +1531,7 @@ implements Pile<E>, HasAssociations.Mixin
 
 		boolean recomputationWasScheduledOrOngoing;
 		boolean recomputationWasScout;
+		Recomputer<E> recompute;
 		synchronized (mutex) {
 			if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
 				System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
@@ -1557,6 +1558,7 @@ implements Pile<E>, HasAssociations.Mixin
 			dependencyTransactions++;
 			recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
 			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
+			recompute = this.recompute;
 		}
 		if(wasValid) {
 			fireDeepRevalidate();
@@ -1565,7 +1567,7 @@ implements Pile<E>, HasAssociations.Mixin
 		cancelPendingRecomputation(true);
 
 		if(recomputationWasScheduledOrOngoing)
-			__scheduleRecomputation(true, recomputationWasScout || this.recompute.useDependencyScouting() && !wasValid);
+			__scheduleRecomputation(true, recomputationWasScout || (recompute!=null && recompute.useDependencyScouting()) && !wasValid);
 
 		//		boolean scout = false;
 		//		if(recompute!=null && recompute.useDependencyScoutingOnBeginningChange() && recompute.useDependencyScoutingIfInvalid(null)) {

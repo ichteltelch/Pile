@@ -2653,8 +2653,21 @@ implements Pile<E>, HasAssociations.Mixin
 									if(informed==null || informed.isEmpty())
 										return;
 									Depender[] notify = informed.toArray(new Depender[informed.size()]);
-									for(Depender d: notify) {
-										d.__dependencyBecameLongTermInvalid(this);
+									HashSet<Object> informing = Depender.informingLongTermInvalid.get();
+									boolean starter;
+									if(informing==null || informing.isEmpty()) {
+										starter=true;
+										Depender.informingLongTermInvalid.set(informing=new HashSet<>());
+									}else {
+										starter=false;
+									}
+									try {
+										for(Depender d: notify) {
+											d.__dependencyBecameLongTermInvalid(this);
+										}
+									}finally {
+										if(starter)
+											Depender.informingLongTermInvalid.set(null);
 									}
 								}
 

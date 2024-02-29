@@ -98,7 +98,6 @@ implements Iterable<E>{
 		int firstRemoved = -1;
 		int removedCount = 0;
 		try(Suppressor s = head().suppressAutoValidation()){
-			head().permaInvalidate();
 			for(int i=0; i<elems.size(); ++i){
 				ReadWriteListenDependency<E> v = elems.get(i);
 				if(filter.test(v.get())) {
@@ -106,8 +105,10 @@ implements Iterable<E>{
 					elems.set(i, null);
 					v.destroy();
 					++ removedCount;
-					if(firstRemoved==-1)
+					if(firstRemoved==-1) {
+						head().permaInvalidate();
 						firstRemoved = i;
+					}
 				}else if(removedCount!=0) {
 					elems.set(i-removedCount, v);
 				}

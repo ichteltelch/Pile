@@ -76,7 +76,7 @@ public interface ReadDependencyBool extends ReadValueBool, Dependency, ReadDepen
 	 * @param ifNull
 	 * @return
 	 */
-	public default <E> SealPile<? extends E> choose(
+	public default <E> SealPile<E> choose(
 			ReadDependency<? extends E> ifTrue, 
 			ReadDependency<? extends E> ifFalse, 
 			ReadDependency<? extends E> ifNull){
@@ -91,7 +91,7 @@ public interface ReadDependencyBool extends ReadValueBool, Dependency, ReadDepen
 	 * @param ifFalse
 	 * @return
 	 */
-	public default <E> SealPile<? extends E> choose(
+	public default <E> SealPile<E> choose(
 			ReadDependency<? extends E> ifTrue, 
 			ReadDependency<? extends E> ifFalse){
 		return _choose(ifTrue, ifFalse, Piles.constNull(), new SealPile<>());
@@ -132,7 +132,7 @@ public interface ReadDependencyBool extends ReadValueBool, Dependency, ReadDepen
 	 * @param ifNull
 	 * @return
 	 */
-	public default <E> SealPile<? extends E> chooseConst(
+	public default <E> SealPile<E> chooseConst(
 			E ifTrue, 
 			E ifFalse, 
 			E ifNull){
@@ -147,7 +147,7 @@ public interface ReadDependencyBool extends ReadValueBool, Dependency, ReadDepen
 	 * @param ifFalse
 	 * @return
 	 */
-	public default <E> SealPile<? extends E> chooseConst(
+	public default <E> SealPile<E> chooseConst(
 			E ifTrue, 
 			E ifFalse){
 		return _chooseConst(ifTrue, ifFalse, null, new SealPile<>());

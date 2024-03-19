@@ -423,6 +423,7 @@ public class PrefInterop {
 			String key, 
 			boolean defaultValue,
 			NullBehavior _nb){
+		Objects.requireNonNull(node);
 		NullBehavior nb = _nb==null?NullBehavior.IGNORE:_nb;
 		if(nb == NullBehavior.STORE_NULL) {
 			throw new IllegalArgumentException("The NullBehavior for a boolean preference cannot be STORE_NULL");

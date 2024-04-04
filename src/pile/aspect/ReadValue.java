@@ -23,6 +23,8 @@ public interface ReadValue<E> extends Supplier<E>, DoesTransactions{
 	 * Get the current value.
 	 * If it is invalid, <code>null</code> is returned and the invalidity becomes observed.
 	 * The access may be recorded by a {@link DependencyRecorder}.
+	 * If it is lazy-validating, a {@link Recomputation} may be triggered and if
+	 * it is fulfilled synchronously, the {@link ReadValue} will become valid before result will be returned. 
 	 * @return
 	 */
 	public E get();
@@ -30,9 +32,7 @@ public interface ReadValue<E> extends Supplier<E>, DoesTransactions{
 	/**
 	 * Just get the current value, without any locking or fancy stuff.
 	 * If it is invalid, <code>null</code> is returned, but invalidity is not observed.
-	 * The access wil not be recorded by a {@link DependencyRecorder}.
-	 * If it is lazy-validating, a {@link Recomputation} may be triggered and if it
-	 * it is fulfilled synchronously, the {@link ReadValue} will become valid before result will be returned. 
+	 * The access will not be recorded by a {@link DependencyRecorder}.
 	 * @return
 	 */
 	public E getAsync();

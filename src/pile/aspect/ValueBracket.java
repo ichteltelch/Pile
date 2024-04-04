@@ -543,7 +543,7 @@ public interface ValueBracket<E, O> {
 	public static <V extends Dependency> StrongDependencyBracket<V> dependencyBracket(
 			Depender d0
 			){
-		return new StrongDependencyBracket<V>(false, (Function<? super V, ? extends Dependency>) d->d, false, d0, (Depender[])null);
+		return new StrongDependencyBracket<V>(false, (Function<? super V, ? extends Dependency>) d->d, true, d0, (Depender[])null);
 	}
 	/**
 	 * Factory method for making a {@link StrongDependencyBracket} that makes a single {@link Depender}
@@ -558,7 +558,7 @@ public interface ValueBracket<E, O> {
 			Function<? super V, ? extends Dependency> extract,
 			Depender d0
 			){
-		return new StrongDependencyBracket<V>(false, extract, false, d0, (Depender[])null);
+		return new StrongDependencyBracket<V>(false, extract, true, d0, (Depender[])null);
 	}
 	/**
 	 * Factory method for making a {@link StrongDependencyBracket} that makes multiple {@link Depender}s
@@ -570,7 +570,7 @@ public interface ValueBracket<E, O> {
 	public static <V extends Dependency> StrongDependencyBracket<V> dependencyBracket(
 			Depender... ds
 			){
-		return new StrongDependencyBracket<V>(false, (Function<? super V, ? extends Dependency>) d->d, false, (Depender) null, ds);
+		return new StrongDependencyBracket<V>(false, (Function<? super V, ? extends Dependency>) d->d, true, (Depender) null, ds);
 	}
 	/**
 	 * Factory method for making a {@link StrongDependencyBracket} that makes multiple {@link Depender}s
@@ -585,7 +585,7 @@ public interface ValueBracket<E, O> {
 			Function<? super V, ? extends Dependency> extract,
 			Depender... ds
 			){
-		return new StrongDependencyBracket<V>(false, extract, false, (Depender) null, ds);
+		return new StrongDependencyBracket<V>(false, extract, true, (Depender) null, ds);
 	}
 
 
@@ -740,7 +740,7 @@ public interface ValueBracket<E, O> {
 			boolean triggerChange, 
 			Dependency d0
 			){
-		return new DependerBracket<V>(false, extract, false, d0, (Dependency[])null);
+		return new DependerBracket<V>(false, extract, triggerChange, d0, (Dependency[])null);
 	}
 	/**
 	 * Factory method for making a {@link DependerBracket} that makes the value depend on a multiple {@link Dependency Dependencies}

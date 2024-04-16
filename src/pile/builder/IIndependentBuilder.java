@@ -19,6 +19,7 @@ import pile.impl.AbstractReadListenDependency;
 import pile.impl.DebugCallback;
 import pile.impl.Independent;
 import pile.impl.Piles;
+import pile.interop.exec.StandardExecutors;
 import pile.relation.CoupleEqual;
 import pile.utils.WeakCleanupWithRunnable;
 
@@ -195,6 +196,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 						setter.accept(value);
 					}
 				}catch(InvalidValueException x) {
+					StandardExecutors.unlimited().execute(leader::fireValueChange);
 				}
 			}else {
 			}
@@ -249,6 +251,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 						setter.accept(value);
 					}
 				}catch(InvalidValueException x) {
+					StandardExecutors.unlimited().execute(leader::fireValueChange);
 				}
 		};
 

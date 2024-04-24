@@ -600,62 +600,62 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 				.seal()
 				.build();
 	}
-//	static <E, V extends SealPile<E>> V _choose_good(
-//			ReadDependency<? extends Boolean> chooser, 
-//			ReadDependency<? extends E> ifTrue, 
-//			ReadDependency<? extends E> ifFalse, 
-//			ReadDependency<? extends E> ifNull,
-//			V template) {
-//		if(ifNull==null) {
-//			return _choose(chooser, ifTrue, ifFalse, Piles.constNull(), template);
-//		}
-//		String chooserName = chooser.dependencyName();
-//		String ifTrueName = ifTrue.dependencyName();
-//		String ifFalseName = ifFalse.dependencyName();
-//		String ifNullName = ifNull.dependencyName();
-//		String name = "(choice on "+(chooserName == null?"?":chooserName)+": ["+
-//				(ifTrueName==null?"?":ifTrueName)+","+
-//				(ifFalseName==null?"?":ifFalseName)+","+
-//				(ifNullName==null?"?":ifNullName)+"])";
-//
-//		//		ReadDependency<? extends E> trueVb = ifTrue.validBuffer_ro();
-//		//		ReadDependency<? extends E> falsVb = ifFalse.validBuffer_ro();
-//		//		ReadDependency<? extends E> nullVb = ifNull.validBuffer_ro();
-//		//		ReadDependencyBool trueVal = ifTrue.validity();
-//		//		ReadDependencyBool falsVal = ifFalse.validity();
-//		//		ReadDependencyBool nullVal = ifNull.validity();
-//
-//		return new SealPileBuilder<>(template)
-//				.essential(chooser, ifTrue, ifFalse, ifNull)
-//				.mayNotRemoveDynamicDependency(chooser)
-//				.recompute(reco->{
-//					if(!chooser.isValid()) {
-//						reco.fulfillRetry();
-//					}
-//					Boolean choice = chooser.get();
-//					if(choice==null) {
-//						//						if(!nullVal.isTrue())
-//						//							reco.fulfillInvalid();
-//						//						else
-//						reco.fulfill(ifNull.get());
-//					}else if(choice) {
-//						//						if(!trueVal.isTrue())
-//						//							reco.fulfillInvalid();
-//						//						else
-//						reco.fulfill(ifTrue.get());
-//					}else {
-//						//						if(!falsVal.isTrue())
-//						//							reco.fulfillInvalid();
-//						//						else
-//						reco.fulfill(ifFalse.get());
-//					}
-//
-//				})
-//				.dynamicDependencies()
-//				.name(name)
-//				.seal()
-//				.build();
-//	}
+	//	static <E, V extends SealPile<E>> V _choose_good(
+	//			ReadDependency<? extends Boolean> chooser, 
+	//			ReadDependency<? extends E> ifTrue, 
+	//			ReadDependency<? extends E> ifFalse, 
+	//			ReadDependency<? extends E> ifNull,
+	//			V template) {
+	//		if(ifNull==null) {
+	//			return _choose(chooser, ifTrue, ifFalse, Piles.constNull(), template);
+	//		}
+	//		String chooserName = chooser.dependencyName();
+	//		String ifTrueName = ifTrue.dependencyName();
+	//		String ifFalseName = ifFalse.dependencyName();
+	//		String ifNullName = ifNull.dependencyName();
+	//		String name = "(choice on "+(chooserName == null?"?":chooserName)+": ["+
+	//				(ifTrueName==null?"?":ifTrueName)+","+
+	//				(ifFalseName==null?"?":ifFalseName)+","+
+	//				(ifNullName==null?"?":ifNullName)+"])";
+	//
+	//		//		ReadDependency<? extends E> trueVb = ifTrue.validBuffer_ro();
+	//		//		ReadDependency<? extends E> falsVb = ifFalse.validBuffer_ro();
+	//		//		ReadDependency<? extends E> nullVb = ifNull.validBuffer_ro();
+	//		//		ReadDependencyBool trueVal = ifTrue.validity();
+	//		//		ReadDependencyBool falsVal = ifFalse.validity();
+	//		//		ReadDependencyBool nullVal = ifNull.validity();
+	//
+	//		return new SealPileBuilder<>(template)
+	//				.essential(chooser, ifTrue, ifFalse, ifNull)
+	//				.mayNotRemoveDynamicDependency(chooser)
+	//				.recompute(reco->{
+	//					if(!chooser.isValid()) {
+	//						reco.fulfillRetry();
+	//					}
+	//					Boolean choice = chooser.get();
+	//					if(choice==null) {
+	//						//						if(!nullVal.isTrue())
+	//						//							reco.fulfillInvalid();
+	//						//						else
+	//						reco.fulfill(ifNull.get());
+	//					}else if(choice) {
+	//						//						if(!trueVal.isTrue())
+	//						//							reco.fulfillInvalid();
+	//						//						else
+	//						reco.fulfill(ifTrue.get());
+	//					}else {
+	//						//						if(!falsVal.isTrue())
+	//						//							reco.fulfillInvalid();
+	//						//						else
+	//						reco.fulfill(ifFalse.get());
+	//					}
+	//
+	//				})
+	//				.dynamicDependencies()
+	//				.name(name)
+	//				.seal()
+	//				.build();
+	//	}
 	//	public static <E, V extends SealPile<E>> V _choose_bad(
 	//			ReadDependency<? extends Boolean> chooser, 
 	//			ReadListenDependency<? extends E> ifTrue, 
@@ -905,8 +905,8 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 	 public static ReadListenDependencyBool conjunction3(ReadListenDependency<? extends Boolean>... items) {
 		 return Piles.aggregate(Piles.and3Aggregator, items);
 	 }
-	 
-	 
+
+
 	 /**
 	  * Aggregate some reactive values using the {@link PileBool#or(ReadDependency)} operation.
 	  */
@@ -1142,8 +1142,8 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 		 });
 	 }
 
-	 
-	 
+
+
 	 /**
 	  * Make a reactive boolean that computes itself to be the result of comparing 
 	  * two reactive values for equivalence under the given equivalence relation
@@ -1452,9 +1452,9 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 		 return Piles
 				 .sealedNoInitBool()
 				 .recomputeS(()->{
-					Boolean i = input.get();
-					boolean controlValue = Boolean.TRUE.equals(control.get());
-					return i==null?null:(i^controlValue);
+					 Boolean i = input.get();
+					 boolean controlValue = Boolean.TRUE.equals(control.get());
+					 return i==null?null:(i^controlValue);
 				 })
 				 .seal(i->{
 					 boolean controlValue = Boolean.TRUE.equals(control.get());
@@ -1584,113 +1584,125 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 				 })
 				 .whenChanged(condition);
 	 }
-	 
-		/**
-		 * Define various monoids for dynamic aggregation over the dependencies.
-		 * @author bb
-		 *
-		 */
-		public static interface BoolMonoidOp {
-			public static final Boolean OR_NEUTRAL = Boolean.FALSE;
-			public static final Boolean AND_NEUTRAL = Boolean.TRUE;
-			public static final Boolean XOR_NEUTRAL = Boolean.FALSE;
-			public static final BoolMonoidOp AND = (a, b)->(a&&b);
-			public static final BoolMonoidOp OR = (a, b)->(a||b);
-			public static final BoolMonoidOp XOR = (a, b)->(a^b);
-			public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> OR_CONFIG = configurator(OR_NEUTRAL, OR);
-			public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> AND_CONFIG = configurator(AND_NEUTRAL, AND);
-			public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> XOR_CONFIG = configurator(XOR_NEUTRAL, XOR);
 
-			public boolean apply(boolean a, boolean b);
+	 /**
+	  * Define various monoids for dynamic aggregation over the dependencies.
+	  * @author bb
+	  *
+	  */
+	 public static interface BoolMonoidOp {
+		 public static final Boolean OR_NEUTRAL = Boolean.FALSE;
+		 public static final Boolean AND_NEUTRAL = Boolean.TRUE;
+		 public static final Boolean XOR_NEUTRAL = Boolean.FALSE;
+		 public static final BoolMonoidOp AND = (a, b)->(a&&b);
+		 public static final BoolMonoidOp OR = (a, b)->(a||b);
+		 public static final BoolMonoidOp XOR = (a, b)->(a^b);
+		 public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> OR_CONFIG = configurator(OR_NEUTRAL, OR);
+		 public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> AND_CONFIG = configurator(AND_NEUTRAL, AND);
+		 public static final Consumer<? super PileBuilder<? extends PileImpl<Boolean>,Boolean>> XOR_CONFIG = configurator(XOR_NEUTRAL, XOR);
 
-			/**
-			 * Make a {@link IBuilder#configure(Consumer) configurator} 
-			 * that sets {@link Pile} so that it computes itself
-			 * as the result of aggregating all its {@link Dependency Dependencies}
-			 * that are instances of {@link ReadValueBool} using the given monoid. 
-			 * @param <V>
-			 * @param ifEmpty Value to take if there are no operands; Neutral element of the monoid
-			 * @param op The monoid operation
-			 * @return
-			 */
-			public static 
-			<V extends PileImpl<Boolean>> 
-			Consumer<? super PileBuilder<? extends V,Boolean>> 
-			configurator(Boolean ifEmpty, BoolMonoidOp op){
-				return vb->{vb.recompute(()->{
-					V val = vb.valueBeingBuilt();
-					MutRef<Boolean> result = new MutRef<>();
-					val.giveDependencies(d->{
-						if(d instanceof ReadValueBool) {
-							ReadValueBool dd = (ReadValueBool)d;
-							Boolean dv = dd.get();
-							if(dv==null)
-								throw new FulfillInvalid("One of the operands is null");
-							Boolean rv = result.val;
-							result.val = rv==null?dv:op.apply(rv, dv);
-						}
-					});
-					return result.val==null?ifEmpty:result.val;
-				})
-					.nameIfUnnamed("Dynamic double aggregator");
-				};
-			}
+		 public boolean apply(boolean a, boolean b);
 
-		}
-	 
-		/**
-		 * Make a reactive boolean that computes itself 
-		 * as the disjunction of its {@link Dependency Dependencies} that are
-		 * also {@link ReadValueBool} instances.
-		 * @param deps initial {@link Dependency Dependencies}
-		 * @return
-		 */
-		public static PileBoolImpl dynamicOr(Dependency... deps) {
-			return buildDynamicDisjunction(new PileBoolImpl()).whenChanged(deps);
-		}
-		/**
-		 * Make a {@link PileBuilder} configured to make the given value compute itself 
-		 * as the disjunction of its {@link Dependency Dependencies} that are also
-		 * {@link ReadValueDouble} instances. 
-		 */
-		public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicDisjunction(V val){
-			return new PileBuilder<>(val).configure(BoolMonoidOp.OR_CONFIG);
-		}
-		/**
-		 * Make a reactive boolean that computes itself 
-		 * as the disjunction of its {@link Dependency Dependencies} that are
-		 * also {@link ReadValueBool} instances.
-		 * @param deps initial {@link Dependency Dependencies}
-		 * @return
-		 */
-		public static PileBoolImpl dynamicAnd(Dependency... deps) {
-			return buildDynamicConjunction(new PileBoolImpl()).whenChanged(deps);
-		}
-		/**
-		 * Make a {@link PileBuilder} configured to make the given value compute itself 
-		 * as the disjunction of its {@link Dependency Dependencies} that are also
-		 * {@link ReadValueDouble} instances. 
-		 */
-		public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicConjunction(V val){
-			return new PileBuilder<>(val).configure(BoolMonoidOp.AND_CONFIG);
-		}
-		/**
-		 * Make a reactive boolean that computes itself 
-		 * as the disjunction of its {@link Dependency Dependencies} that are
-		 * also {@link ReadValueBool} instances.
-		 * @param deps initial {@link Dependency Dependencies}
-		 * @return
-		 */
-		public static PileBoolImpl dynamicXor(Dependency... deps) {
-			return buildDynamicXor(new PileBoolImpl()).whenChanged(deps);
-		}
-		/**
-		 * Make a {@link PileBuilder} configured to make the given value compute itself 
-		 * as the disjunction of its {@link Dependency Dependencies} that are also
-		 * {@link ReadValueDouble} instances. 
-		 */
-		public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicXor(V val){
-			return new PileBuilder<>(val).configure(BoolMonoidOp.XOR_CONFIG);
-		}
-	 
+		 /**
+		  * Make a {@link IBuilder#configure(Consumer) configurator} 
+		  * that sets {@link Pile} so that it computes itself
+		  * as the result of aggregating all its {@link Dependency Dependencies}
+		  * that are instances of {@link ReadValueBool} using the given monoid. 
+		  * @param <V>
+		  * @param ifEmpty Value to take if there are no operands; Neutral element of the monoid
+		  * @param op The monoid operation
+		  * @return
+		  */
+		 public static 
+		 <V extends PileImpl<Boolean>> 
+		 Consumer<? super PileBuilder<? extends V,Boolean>> 
+		 configurator(Boolean ifEmpty, BoolMonoidOp op){
+			 return vb->{vb.recompute(()->{
+				 V val = vb.valueBeingBuilt();
+				 MutRef<Boolean> result = new MutRef<>();
+				 val.giveDependencies(d->{
+					 if(d instanceof ReadValueBool) {
+						 ReadValueBool dd = (ReadValueBool)d;
+						 Boolean dv = dd.get();
+						 if(dv==null)
+							 throw new FulfillInvalid("One of the operands is null");
+						 Boolean rv = result.val;
+						 result.val = rv==null?dv:op.apply(rv, dv);
+					 }
+				 });
+				 return result.val==null?ifEmpty:result.val;
+			 })
+				 .nameIfUnnamed("Dynamic double aggregator");
+			 };
+		 }
+
+	 }
+
+	 /**
+	  * Make a reactive boolean that computes itself 
+	  * as the disjunction of its {@link Dependency Dependencies} that are
+	  * also {@link ReadValueBool} instances.
+	  * @param deps initial {@link Dependency Dependencies}
+	  * @return
+	  */
+	 public static PileBoolImpl dynamicOr(Dependency... deps) {
+		 return buildDynamicDisjunction(new PileBoolImpl()).whenChanged(deps);
+	 }
+	 /**
+	  * Make a {@link PileBuilder} configured to make the given value compute itself 
+	  * as the disjunction of its {@link Dependency Dependencies} that are also
+	  * {@link ReadValueDouble} instances. 
+	  */
+	 public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicDisjunction(V val){
+		 return new PileBuilder<>(val).configure(BoolMonoidOp.OR_CONFIG);
+	 }
+	 /**
+	  * Make a reactive boolean that computes itself 
+	  * as the disjunction of its {@link Dependency Dependencies} that are
+	  * also {@link ReadValueBool} instances.
+	  * @param deps initial {@link Dependency Dependencies}
+	  * @return
+	  */
+	 public static PileBoolImpl dynamicAnd(Dependency... deps) {
+		 return buildDynamicConjunction(new PileBoolImpl()).whenChanged(deps);
+	 }
+	 /**
+	  * Make a {@link PileBuilder} configured to make the given value compute itself 
+	  * as the disjunction of its {@link Dependency Dependencies} that are also
+	  * {@link ReadValueDouble} instances. 
+	  */
+	 public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicConjunction(V val){
+		 return new PileBuilder<>(val).configure(BoolMonoidOp.AND_CONFIG);
+	 }
+	 /**
+	  * Make a reactive boolean that computes itself 
+	  * as the disjunction of its {@link Dependency Dependencies} that are
+	  * also {@link ReadValueBool} instances.
+	  * @param deps initial {@link Dependency Dependencies}
+	  * @return
+	  */
+	 public static PileBoolImpl dynamicXor(Dependency... deps) {
+		 return buildDynamicXor(new PileBoolImpl()).whenChanged(deps);
+	 }
+	 /**
+	  * Make a {@link PileBuilder} configured to make the given value compute itself 
+	  * as the disjunction of its {@link Dependency Dependencies} that are also
+	  * {@link ReadValueDouble} instances. 
+	  */
+	 public static <V extends PileImpl<Boolean>> PileBuilder<V, Boolean> buildDynamicXor(V val){
+		 return new PileBuilder<>(val).configure(BoolMonoidOp.XOR_CONFIG);
+	 }
+	 public static Dependency validIfTrue(ReadDependency<? extends Boolean> b) {
+		 return Piles
+				 .compute(reco->{
+					 if(ReadValueBool.isTrue(b))
+						 reco.fulfill(null);
+					 else
+						 reco.fulfillInvalid();
+				 })
+				 .name("validIfTrue("+b.dependencyName()+")")
+				 .whenChanged(b)
+				 ;
+	 }
+
 }

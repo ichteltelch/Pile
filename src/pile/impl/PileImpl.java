@@ -268,6 +268,8 @@ implements Pile<E>, HasAssociations.Mixin
 	//	private Object scoutMutex;
 	@Override
 	public void setDependencyEssential(boolean essential, Dependency d) {
+//		if(d==null)
+//			throw new IllegalArgumentException();
 		if(essential) {
 			d.__setEssentialFor(this, true);
 			synchronized (mutex) {
@@ -1452,13 +1454,14 @@ implements Pile<E>, HasAssociations.Mixin
 
 		@Override
 		public synchronized boolean renameThread(String name) {
-			if(Thread.currentThread()!=t)
+			Thread ct = Thread.currentThread();
+			if(ct!=t)
 				return false;
 			threadName = name;
 			if(name==null) {
 				if(threadNameBeforeRenaming!=null) {
 					try {
-						t.setName(threadNameBeforeRenaming);
+						ct.setName(threadNameBeforeRenaming);
 					}catch(SecurityException x) {
 						log.log(Level.WARNING, "could not restore thread name", x);
 					}
@@ -1466,9 +1469,9 @@ implements Pile<E>, HasAssociations.Mixin
 				}
 			}else {
 				if(threadNameBeforeRenaming==null)
-					threadNameBeforeRenaming = t.getName();
+					threadNameBeforeRenaming = ct.getName();
 				try {
-					t.setName(name);
+					ct.setName(name);
 				}catch(SecurityException x) {
 					log.log(Level.WARNING, "could not restore thread name", x);
 				}

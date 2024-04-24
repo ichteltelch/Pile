@@ -386,4 +386,9 @@ public interface ReadDependencyBool extends ReadValueBool, Dependency, ReadDepen
 	 * The mapping function used by {@link #mapToInt()}.
 	 */
 	static Function<? super Boolean, ? extends Integer> __BOOL_TO_INT = b->Boolean.TRUE.equals(b)?1:0;
+	
+	public default Dependency validIfTrue() {
+		return PileBool.validIfTrue(this);
+	}
+
 }

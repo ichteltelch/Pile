@@ -1549,11 +1549,22 @@ public class Piles {
 	public static <E, V extends ReadListenDependency<? extends E>> V aggregate(
 			AggregationMonoid<E, ? extends V> operation,
 			Iterable<? extends ReadListenDependency<? extends E>> items
+		){
+		return aggregate(null, operation, items);
+	}
+	public static <E, V extends ReadListenDependency<? extends E>> V aggregate(
+			Predicate<? super ReadListenDependency<? extends E>> isNeutral,
+			AggregationMonoid<E, ? extends V> operation,
+			Iterable<? extends ReadListenDependency<? extends E>> items
 			){
 		ArrayList<ReadListenDependency<? extends E>> stack=new ArrayList<>();
 		int index = 0;
 		V lastResult=null;
 		for(ReadListenDependency<? extends E> item: items) {
+			if(item==null)
+				continue;
+			if(isNeutral!=null && isNeutral.test(item))
+				continue;
 			stack.add(item);
 			// 000 -> 0
 			// 001 -> 1
@@ -1598,7 +1609,15 @@ public class Piles {
 	@SafeVarargs
 	public static <E, V extends ReadListenDependency<? extends E>> V aggregate(
 			AggregationMonoid<E, ? extends V> operation,
-			ReadListenDependency<? extends E>... items  
+			ReadListenDependency<? extends E>... items
+			){
+		return aggregate(null, operation, items);
+	}	
+	@SafeVarargs
+	public static <E, V extends ReadListenDependency<? extends E>> V aggregate(
+			Predicate<? super ReadListenDependency<? extends E>> isNeutral,
+			AggregationMonoid<E, ? extends V> operation,
+			ReadListenDependency<? extends E>... items
 			){
 
 		ArrayList<ReadListenDependency<? extends E>> stack=new ArrayList<>();
@@ -1606,6 +1625,8 @@ public class Piles {
 		V lastResult=null;
 		for(ReadListenDependency<? extends E> item: items) {
 			if(item==null)
+				continue;
+			if(isNeutral!=null && isNeutral.test(item))
 				continue;
 			stack.add(item);
 			for(int bits = index; (bits&1)!=0; bits>>>=1) {

@@ -871,39 +871,39 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 	 * Aggregate some reactive values using the {@link PileBool#and(ReadDependency)} operation.
 	 */
 	public static ReadListenDependencyBool conjunction(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
-		return Piles.aggregate(Piles.andAggregator, items);
+		return Piles.aggregate(i->i==Piles.TRUE, Piles.andAggregator, items);
 	}
 	/**
 	 * Aggregate some reactive values using the {@link PileBool#and(ReadDependency)} operation.
 	 */
 	@SafeVarargs
 	public static ReadListenDependencyBool conjunction(ReadListenDependency<? extends Boolean>... items) {
-		return Piles.aggregate(Piles.andAggregator, items);
+		return Piles.aggregate(i->i==Piles.TRUE, Piles.andAggregator, items);
 	}
 	/**
 	 * Aggregate some reactive values using the {@link PileBool#and2(ReadDependency)} operation.
 	 */
 	public static ReadListenDependencyBool conjunction2(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
-		return Piles.aggregate(Piles.and2Aggregator, items);
+		return Piles.aggregate(i->i==Piles.TRUE, Piles.and2Aggregator, items);
 	}
 	/**
 	 * Aggregate some reactive values using the {@link PileBool#and2(ReadDependency)} operation.
 	 */
 	@SafeVarargs
 	public static ReadListenDependencyBool conjunction2(ReadListenDependency<? extends Boolean>... items) {
-		return Piles.aggregate(Piles.and2Aggregator, items);
+		return Piles.aggregate(i->i==Piles.TRUE, Piles.and2Aggregator, items);
 	}
 	/**
 	 * Aggregate some reactive values using the {@link PileBool#and3(ReadDependency)} operation.
 	 */
 	public static ReadListenDependencyBool conjunction3(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
-		return Piles.aggregate(Piles.and3Aggregator, items);
+		return Piles.aggregate(i->i==Piles.TRUE, Piles.and3Aggregator, items);
 	}
 	/**
 	 * Aggregate some reactive values using the {@link PileBool#and3(ReadDependency)} operation.
 	 */	@SafeVarargs
 	 public static ReadListenDependencyBool conjunction3(ReadListenDependency<? extends Boolean>... items) {
-		 return Piles.aggregate(Piles.and3Aggregator, items);
+		 return Piles.aggregate(i->i==Piles.TRUE, Piles.and3Aggregator, items);
 	 }
 
 
@@ -911,40 +911,40 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 	  * Aggregate some reactive values using the {@link PileBool#or(ReadDependency)} operation.
 	  */
 	 public static ReadListenDependencyBool disjunction(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
-		 return Piles.aggregate(Piles.orAggregator, items);
+		 return Piles.aggregate(i->i==Piles.FALSE, Piles.orAggregator, items);
 	 }
 	 /**
 	  * Aggregate some reactive values using the {@link PileBool#or(ReadDependency)} operation.
 	  */
 	 @SafeVarargs
 	 public static ReadListenDependencyBool disjunction(ReadListenDependency<? extends Boolean>... items) {
-		 return Piles.aggregate(Piles.orAggregator, items);
+		 return Piles.aggregate(i->i==Piles.FALSE, Piles.orAggregator, items);
 	 }
 	 /**
 	  * Aggregate some reactive values using the {@link PileBool#or2(ReadDependency)} operation.
 	  */
 	 public static ReadListenDependencyBool disjunction2(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
-		 return Piles.aggregate(Piles.or2Aggregator, items);
+		 return Piles.aggregate(i->i==Piles.FALSE, Piles.or2Aggregator, items);
 	 }
 	 /**
 	  * Aggregate some reactive values using the {@link PileBool#or2(ReadDependency)} operation.
 	  */
 	 @SafeVarargs
 	 public static ReadListenDependencyBool disjunction2(ReadListenDependency<? extends Boolean>... items) {
-		 return Piles.aggregate(Piles.or2Aggregator, items);
+		 return Piles.aggregate(i->i==Piles.FALSE, Piles.or2Aggregator, items);
 	 }
 	 /**
 	  * Aggregate some reactive values using the {@link PileBool#or3(ReadDependency)} operation.
 	  */
 	 public static ReadListenDependencyBool disjunction3(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
-		 return Piles.aggregate(Piles.or3Aggregator, items);
+		 return Piles.aggregate(i->i==Piles.FALSE, Piles.or3Aggregator, items);
 	 }
 	 /**
 	  * Aggregate some reactive values using the {@link PileBool#or3(ReadDependency)} operation.
 	  */
 	 @SafeVarargs
 	 public static ReadListenDependencyBool disjunction3(ReadListenDependency<? extends Boolean>... items) {
-		 return Piles.aggregate(Piles.or3Aggregator, items);
+		 return Piles.aggregate(i->i==Piles.FALSE, Piles.or3Aggregator, items);
 	 }
 
 	 /**

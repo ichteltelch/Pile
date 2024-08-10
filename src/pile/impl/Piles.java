@@ -2391,6 +2391,11 @@ public class Piles {
 	 * A {@link SealedValue} that always holds a <code>null</code> value 
 	 */
 	public static final SealPile<?> SEALED_NULL = sealedConstant((Object)null);
+	
+	@SuppressWarnings("unchecked")
+	public static final <T> SealPile<T> sealedNull(){
+		return (SealPile<T>)SEALED_NULL;
+	}
 	/**
 	 * Call this nop-method to load the {@link Piles} class.
 	 * If you experience problems with the order of class loading, you should call this

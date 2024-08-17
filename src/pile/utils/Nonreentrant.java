@@ -185,4 +185,27 @@ public class Nonreentrant{
 				in.set(false);
 		}
 	}
+	/**
+	 * Enter the scope of this {@link Nonreentrant} for the lifetime of the returned
+	 * {@link MockBlock}. If the current {@link Thread} is already inside this
+	 * scope, nothing will happen and {@link MockBlock#NOP} will be returned.
+	 * You should probably check the return value, otherwise using this will have been for nothing
+	 * @return
+	 * @throws ReentrantException
+	 */
+	public MockBlock block_noThrow() {
+		Boolean isIn = in.get();
+		if(Boolean.TRUE.equals(isIn))
+			return MockBlock.NOP;
+		MockBlock block = MockBlock.closeOnly(()->in.set(false));
+		boolean success = false;
+		try {
+			in.set(Boolean.TRUE);
+			success = true; 
+			return block;
+		}finally {
+			if(!success)
+				in.set(false);
+		}
+	}
 }

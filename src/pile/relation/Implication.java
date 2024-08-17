@@ -69,6 +69,11 @@ public class Implication extends AbstractRelation{
 		}
 		vl.valueChanged(null);
 	}
+	@Override
+	public void destroy() {
+		premise.removeValueListener(removeFromPremise);
+		conclusion.removeValueListener(removeFromConclusion);
+	}
 
 
 

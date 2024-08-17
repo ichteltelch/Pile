@@ -11,7 +11,9 @@ import pile.specialized_bool.combinations.ReadListenDependencyBool;
  *
  * @param <E>
  */
-public class SwitchableCoupleEqual<E> extends CoupleEqual<E> implements SwitchableRelation<ReadListenValue<Boolean>> {
+public class SwitchableCoupleEqual<E> 
+extends CoupleEqual<E> 
+implements SwitchableRelation<ReadListenValue<Boolean>> {
 	SwitchableRelation<ReadListenValue<Boolean>> switcher;
 	public SwitchableCoupleEqual(
 			ReadWriteListenValue<E> op1,

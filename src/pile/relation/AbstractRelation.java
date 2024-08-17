@@ -39,4 +39,6 @@ public abstract class AbstractRelation {
 	public ReadListenDependencyBool isEnabled() {
 		return Piles.TRUE;
 	}
+
+	public abstract void destroy();
 }

@@ -113,6 +113,13 @@ public class CoupleEqual<E> extends AbstractRelation{
 		if(initSync)
 			vl.valueChanged(null);
 	}
+	@Override
+	public void destroy() {
+		op1.removeValueListener(removeFromOp1);
+		op2.removeValueListener(removeFromOp2);
+		op1=null;
+		op2=null;
+	}
 	
 	@Override
 	protected ValueListener getListener() {

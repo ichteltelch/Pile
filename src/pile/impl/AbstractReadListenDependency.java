@@ -37,7 +37,6 @@ import pile.aspect.recompute.Recomputer;
 import pile.aspect.suppress.MockBlock;
 import pile.aspect.suppress.Suppressor;
 import pile.interop.debug.DebugEnabled;
-import pile.interop.exec.StandardExecutors;
 import pile.interop.wait.WaitService;
 import pile.specialized_bool.IndependentBool;
 import pile.specialized_bool.combinations.ReadListenDependencyBool;
@@ -804,7 +803,9 @@ ListenValue.Managed{
 			//				if(ET_TRACE && traceEnabledFor(this))synchronized(trace) {trace.append("recomputation not started: Not autovalidating, ");}
 			//
 			//			}
-			if(startRecomputation && !StandardExecutors.interrupted()) {
+			if(startRecomputation
+//					&& !StandardExecutors.interrupted()
+					) {
 				//				if(canRecomputeWithInvalidDependencies())
 				//					System.out.println();
 				__scheduleRecomputation(false);

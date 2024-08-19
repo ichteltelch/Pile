@@ -671,6 +671,7 @@ implements Pile<E>, HasAssociations.Mixin
 						recomputationDepth.set(rd = new MutInt(0));
 
 					rd.val++;
+					boolean interrupted = WaitService.get().interrupted();
 					try {
 						if(rd.val>100) {
 							log.warning("very deeply nested recomputation in Pile '"+dependencyName()+"'");
@@ -678,6 +679,10 @@ implements Pile<E>, HasAssociations.Mixin
 						rc.accept(ww);
 					}finally {
 						rd.val--;
+						if(interrupted)
+							WaitService.get().interruptSelf();
+						else
+							WaitService.get().interrupted();
 					}
 					//				}
 				}finally {
@@ -754,6 +759,7 @@ implements Pile<E>, HasAssociations.Mixin
 	int fulfillNesting;
 	private static final class MyRecomputation<E> implements Recomputation<E>{
 
+//		static AtomicInteger counter = new AtomicInteger();
 		volatile Thread t;
 		Future<?> f;
 		boolean finished;
@@ -769,6 +775,8 @@ implements Pile<E>, HasAssociations.Mixin
 		HashSet<Dependency> recorded;
 
 		public MyRecomputation(PileImpl<E> outer, boolean ta, boolean scout) {
+//			if(scout)
+//				System.out.println("Started scouting recomputation #"+counter.incrementAndGet()+ ", this one for "+outer.dependencyName());
 			this.outer=new WeakCleanupWithRunnable<PileImpl<E>>(outer, this::cancel);
 			transactionActive=ta;
 			this.scout = scout;

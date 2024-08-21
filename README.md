@@ -98,10 +98,10 @@ Here's an overview of the features offered by the *Pile* framework, with pointer
  `A` depends on `R` and `S`, which both depend on `X`. Now, if `X` is changed, `R` and `S` will recompute themselves. But we want `A` to recompute itself only once, after both
  `R` and `S` have attained their (possibly) new values, otherwise `A` would maybe recompute itself twice, and, what's worse, do so once with inconsistent inputs. This is why 
  a reactive value that is undergoing change, whether because it is being `set` explicitly, because it is waiting for its ongoing `Recomputation` to be `fulfill`ed, or because
- some of its dependencies are invalid due to being in a transaction themselves, enters a transaction that propagates to all its Dependers for as long as the reactive value is invalid with hope of becoming valid again it is recorded what soon.
+ some of its dependencies are invalid due to being in a transaction themselves, enters a transaction that propagates to all its Dependers for as long as the reactive value is invalid with hope of becoming valid again.
  Being in a transaction may invalidate the reactive value, but the plain value it previously held will be remembered; it can be restored and, if a `Recomputation` should be triggered
  at the end of the transaciton, the `Recomputer` can ask for the old value.
- Transactions can also be started manually, for example when setting several values such as indvidiual coordinates of a point.
+ Transactions can also be started manually, for example when setting several related values such as indvidiual coordinates of a point.
  * **Value equivalence**: When a the value wrapped by a reactive value changes, be it by means of setting it manually or because it got recomputed, `ValueEvent`s need to be emitted
  and `Depender`s need to be informed that one of their dependencies changed and they should recompute themselves. But what counts as "changed"? 
  You can decide by defining a custom equivalence relation that will be used in the place of `Objects::equals` to compare the old value, if available, to the new one.

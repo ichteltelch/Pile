@@ -72,6 +72,11 @@ public interface Bijection<From, To> extends Function<From, To>{
 			public From applyInverse(To y) {
 				return fro.apply(y);
 			}
+			Bijection<To, From> inverse;
+			@Override
+            public Bijection<To, From> inverse() {
+                return inverse==null?inverse=new InverseBijection<>(this):inverse;
+            }
 		};
 	}
 	/**

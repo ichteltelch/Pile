@@ -1904,13 +1904,13 @@ implements Pile<E>, HasAssociations.Mixin
 	public void valueMutated() {
 		if(listeners==null)
 			return;
-		getListenerManager().fireValueChange(new ValueEvent(this));
+		_getListenerManager().fireValueChange(new ValueEvent(this));
 	}
 	@Override
 	public void valueTransformMutated() {
 		if(listeners==null)
 			return;
-		getListenerManager().fireValueChange(new TransformValueEvent(this));
+		_getListenerManager().fireValueChange(new TransformValueEvent(this));
 	}
 	/**
 	 * Create an unconfigured, initially invalid {@link Pile}

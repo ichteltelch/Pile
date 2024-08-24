@@ -101,7 +101,7 @@ public class Hub extends PileImpl<Object>{
 			if(listeners==null) {
 				return;
 			}
-			getListenerManager().fireValueChange(e);
+			_getListenerManager().fireValueChange(e);
 		};
 	}
 

@@ -7,6 +7,7 @@ import java.util.function.Consumer;
 import pile.aspect.listen.RateLimitedValueListener.MultiEvent;
 import pile.aspect.transform.TransformValueEvent;
 import pile.interop.exec.StandardExecutors;
+import pile.utils.IdentityComparator;
 
 /**
  * An object that runs event handler code when a {@link ValueEvent} is received.
@@ -24,6 +25,9 @@ public interface ValueListener {
 		int bp = b.priority();
 		return Integer.compare(ap, bp);
 	};
+	public static final Comparator<? super ValueListener> COMPARE_BY_PRIORITY_AND_IDENTITY =
+			COMPARE_BY_PRIORITY.thenComparing(IdentityComparator.INST);
+	
 	/**
 	 * Event handler code goes here
 	 * @param e
@@ -146,6 +150,7 @@ public interface ValueListener {
 	/**
 	 * Defines how early this Listener should run. Smaller priorities run sooner.
 	 * The default implementation gives a priority value of 0 .
+	 * The priority must not change!
 	 * @return
 	 */
 	default public int priority() {

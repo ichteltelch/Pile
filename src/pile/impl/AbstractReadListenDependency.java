@@ -231,7 +231,7 @@ ListenValue.Managed{
 	public Object owner;
 
 	@Override
-	public ListenerManager getListenerManager() {
+	public ListenerManager _getListenerManager() {
 		ListenerManager localRef = listeners;
 		if (localRef == null) {
 			synchronized (mutex) {
@@ -257,10 +257,10 @@ ListenValue.Managed{
 			return;
 		}
 		if(Piles.shouldDeepRevalidate()) {
-			getListenerManager().fireValueChange();
+			_getListenerManager().fireValueChange();
 		}else {
 			try(MockBlock b = Piles.withShouldDeepRevalidate(true)){ //TODO: avoid allocation
-				getListenerManager().fireValueChange();
+				_getListenerManager().fireValueChange();
 			}
 		}
 	}

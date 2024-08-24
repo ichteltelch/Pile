@@ -18,14 +18,21 @@ import pile.utils.WeakCleanup;
  */
 public class WeakValueListener extends WeakCleanup<ValueListener> implements ValueListener{
 
+	int priority;
 	public WeakValueListener(ValueListener back) {
 		super(back);
+		this.priority=back.priority();
 	}
 	WeakHashMap<ListenValue, ?> addedTo = new WeakHashMap<>();
 	/**
 	 * This removes the listener from all ListenValues it has been registered with and that are still
 	 * reachable.
 	 */
+	
+	@Override
+	public int priority() {
+		return priority;
+	}
 	@Override
 	public synchronized void run() {
 		Set<ListenValue> removeFrom = addedTo.keySet();

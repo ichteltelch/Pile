@@ -220,7 +220,7 @@ AlwaysValid<T>
 	}
 
 	@Override
-	public ListenerManager getListenerManager() {
+	public ListenerManager _getListenerManager() {
 		if(manager == null) {
 			synchronized (this) {
 				if(manager == null)

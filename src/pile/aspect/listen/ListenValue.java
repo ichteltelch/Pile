@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,6 +19,8 @@ import pile.aspect.listen.RateLimitedValueListener.MultiEvent;
  *
  */
 public interface ListenValue {
+	
+
 
 	/**
 	 * Add a {@link ValueListener} that is to be run immediately when the value changes
@@ -104,7 +108,7 @@ public interface ListenValue {
 	 * A value class may implement this in order to manage its listeners using a
 	 * {@link ListenerManager}.
 	 * The abstract methods defined by ListenValue are forwarded to the {@link ListenerManager}
-	 * returned by the {@link #getListenerManager()} method 
+	 * returned by the {@link #_getListenerManager()} method 
 	 * @author bb
 	 *
 	 */
@@ -113,26 +117,26 @@ public interface ListenValue {
 		 * Get the ListenerManager that the other method calls should be forwarded to
 		 * @return
 		 */
-		public ListenerManager getListenerManager();
+		public ListenerManager _getListenerManager();
 		@Override default
 		void addValueListener(ValueListener cl) {
-			getListenerManager().addValueListener(cl);
+			_getListenerManager().addValueListener(cl);
 		}
 		@Override default
 		void removeValueListener(ValueListener cl) {
-			getListenerManager().removeValueListener(cl);
+			_getListenerManager().removeValueListener(cl);
 		}
 		@Override default
 		boolean hasValueListener(ValueListener cl) {
-			return getListenerManager().hasValueListener(cl);
+			return _getListenerManager().hasValueListener(cl);
 		}
 		@Override
 		default void fireValueChange() {
-			getListenerManager().fireValueChange();
+			_getListenerManager().fireValueChange();
 		}
 		@Override
 		default void removeWeakValueListener(ValueListener wrapped) {
-			getListenerManager().removeWeakValueListener(wrapped);
+			_getListenerManager().removeWeakValueListener(wrapped);
 		}
 	}
 	/**
@@ -147,18 +151,35 @@ public interface ListenValue {
 		 * The object that will be the source of the generated events 
 		 */
 		private Object source;
+		boolean sorting;
 		
 		/**
 		 * 
 		 * @param source The object that will be the source of the generated events
 		 */
 		public ListenerManager(Object source) {
+			this(source, true);
+		}
+		/**
+		 * @param source The object that will be the source of the generated events
+		 * @param sorting If <code>true</code>, the listeners will be sorted before firing an event. If false, the listeners will be stored in sorted order.
+		 */
+		public ListenerManager(Object source, boolean sorting) {
+
 			this.source=source;
+			this.sorting=sorting;
 		}
 		/**
 		 * The {@link ListenerManager} itself will be the source of the generated events
 		 */
 		public ListenerManager() {
+			this(true);
+		}
+		/**
+		 * The {@link ListenerManager} itself will be the source of the generated events
+		 * @param sorting If <code>true</code>, the listeners will be sorted before firing an event. If false, the listeners will be stored in sorted order.
+		 */
+		public ListenerManager(boolean sorting) {
 			this.source=this;
 		}
 
@@ -170,7 +191,7 @@ public interface ListenValue {
 		 * @see #hasValueListener(ValueListener)
 		 * @see #fireValue(ValueEvent, boolean)
 		 */
-		HashSet<ValueListener> listeners;
+		Set<ValueListener> listeners;
 
 		@Override
 		public void addValueListener(ValueListener l){
@@ -180,7 +201,7 @@ public interface ListenValue {
 			boolean success;
 			synchronized (this) {
 				if(listeners==null)
-					listeners=new HashSet<>();
+					listeners=sorting?new HashSet<>():new TreeSet<>(ValueListener.COMPARE_BY_PRIORITY_AND_IDENTITY);
 				success = listeners.add(l);
 			}
 			if(success)
@@ -228,14 +249,15 @@ public interface ListenValue {
 			synchronized (this) {
 				if(listeners == null || listeners.isEmpty())
 					return;
-				HashSet<ValueListener> ls = listeners;
+				Set<ValueListener> ls = listeners;
 				if(ls==null || ls.isEmpty())
 					return;
 				cla = (ValueListener[]) ls.toArray(new ValueListener[ls.size()]);
 			}
 			ValueEvent e=ee==null?new ValueEvent(source):ee;
 
-			Arrays.sort(cla, ValueListener.COMPARE_BY_PRIORITY);
+			if(sorting)
+				Arrays.sort(cla, ValueListener.COMPARE_BY_PRIORITY);
 			for(ValueListener c: cla){
 				try{
 					c.valueChanged(e);
@@ -297,6 +319,7 @@ public interface ListenValue {
 	 * @param wrapped
 	 */
 	public void removeWeakValueListener(ValueListener wrapped);
+		
 	
 //	public void syncWithInternalMutex();
 }

@@ -240,6 +240,10 @@ AlwaysValid<T>
 			manager.fireValueChange();
 	}
 
+	@Override
+	public String toString() {
+		return key+"="+currentString;
+	}
 
 	
 }

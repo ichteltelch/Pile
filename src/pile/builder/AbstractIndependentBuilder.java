@@ -7,8 +7,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import pile.aspect.LastValueRememberer;
-import pile.aspect.ValueBracket;
 import pile.aspect.VetoException;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteListenValue;

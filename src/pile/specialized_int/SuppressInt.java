@@ -7,9 +7,11 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import pile.aspect.ValueBracket.ValueOnlyBracket;
+import pile.aspect.bracket.ValueBracket;
+import pile.aspect.bracket.ValueOnlyBracket;
 import pile.aspect.combinations.Pile;
 import pile.aspect.suppress.Suppressor;
+import pile.interop.debug.DebugEnabled;
 import pile.interop.exec.StandardExecutors;
 import pile.utils.SequentialQueue;
 import pile.utils.WeakCleanup;
@@ -141,9 +143,9 @@ public class SuppressInt extends IndependentInt{
 	 * @param crit: Important: This must predicate always evaluate to the same result for the same object! 
 	 * @return
 	 */
-	public <T> ValueOnlyBracket<T> suppressBracket(boolean inheritable, Predicate<? super T> crit) {
+	public <T> ValueBracket<T, Object> suppressBracket(boolean inheritable, Predicate<? super T> crit) {
 		MutInt openCount = new MutInt(); 
-		ValueOnlyBracket<T> ret = new ValueOnlyBracket<T>() {
+		ValueBracket<T, Object> ret = new ValueOnlyBracket<T>() {
 			@Override
 			public boolean isInheritable() {
 				return inheritable;
@@ -164,7 +166,7 @@ public class SuppressInt extends IndependentInt{
 							decrement();
 					}
 				}
-				return false;
+				return true;
 			}
 			@Override
 			public boolean close(T value, Object owner) {
@@ -177,11 +179,15 @@ public class SuppressInt extends IndependentInt{
 				return false;
 			}
 			@Override
-			public boolean nopOpen() {
+			public boolean openIsNop() {
 				return false;
 			}
 			@Override
-			public boolean nopClose() {
+			public boolean closeIsNop() {
+				return false;
+			}
+			@Override
+			public boolean canBecomeObsolete() {
 				return false;
 			}
 		};
@@ -210,6 +216,8 @@ public class SuppressInt extends IndependentInt{
 			}
 			
 		});
+		if(DebugEnabled.DETECT_STUCK_BRACKETS)
+			ret=ret.detectStuck();
 		return ret;
 	}
 }

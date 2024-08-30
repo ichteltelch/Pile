@@ -4,11 +4,11 @@ import java.util.function.Consumer;
 
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
-import pile.aspect.HasBrackets;
 import pile.aspect.LastValueRememberer;
 import pile.aspect.ReadValue;
 import pile.aspect.ReadValue.InvalidValueException;
-import pile.aspect.ValueBracket;
+import pile.aspect.bracket.HasBrackets;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.WriteValue;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;

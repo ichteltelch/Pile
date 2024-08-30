@@ -17,9 +17,9 @@ import java.util.logging.Logger;
 
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
-import pile.aspect.ValueBracket;
 import pile.aspect.VetoException;
 import pile.aspect.HasAssociations.NamedAssociationKey;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.listen.ValueListener;
 import pile.aspect.recompute.Recomputation;

@@ -11,6 +11,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import pile.aspect.listen.RateLimitedValueListener.MultiEvent;
+import pile.utils.defer.Deferrer;
+import pile.utils.defer.DeferrerQueue;
 
 
 /**
@@ -20,6 +22,7 @@ import pile.aspect.listen.RateLimitedValueListener.MultiEvent;
  */
 public interface ListenValue {
 	
+	public static final Deferrer DEFER = Deferrer.makeThreadLocal(DeferrerQueue.FiFo::new);
 
 
 	/**

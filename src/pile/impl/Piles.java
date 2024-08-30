@@ -73,7 +73,6 @@ import pile.utils.Functional;
 
 public class Piles {
 
-
 	
 	@SuppressWarnings("unused")
 	private final static Logger log=Logger.getLogger("Values");

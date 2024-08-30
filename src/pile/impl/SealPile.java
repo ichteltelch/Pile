@@ -7,8 +7,9 @@ import java.util.function.Function;
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
 import pile.aspect.Sealable;
-import pile.aspect.ValueBracket;
 import pile.aspect.WriteValue;
+import pile.aspect.bracket.ValueBracket;
+import pile.aspect.bracket.ValueOnlyBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.WriteDepender;
 import pile.aspect.recompute.Recomputer;
@@ -137,7 +138,7 @@ public class SealPile<E> extends PileImpl<E> implements Sealable<E> {
 	@Override
 	public void _addValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
 		if(sealed!=null) {
-			if(!(b instanceof ValueBracket.ValueOnlyBracket<?>))
+			if(!(b instanceof ValueOnlyBracket<?>))
 				throw new IllegalStateException("Cannot change bracketing of a sealed SealableValue");
 		}
 		super._addValueBracket(openNow, b);
@@ -145,7 +146,7 @@ public class SealPile<E> extends PileImpl<E> implements Sealable<E> {
 	@Override
 	public void _addOldValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
 		if(sealed!=null) {
-			if(!(b instanceof ValueBracket.ValueOnlyBracket<?>))
+			if(!(b instanceof ValueOnlyBracket<?>))
 				throw new IllegalStateException("Cannot change bracketing of a sealed SealableValue");
 		}
 		super._addOldValueBracket(openNow, b);
@@ -153,7 +154,7 @@ public class SealPile<E> extends PileImpl<E> implements Sealable<E> {
 	@Override
 	public void _addAnyValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
 		if(sealed!=null) {
-			if(!(b instanceof ValueBracket.ValueOnlyBracket<?>))
+			if(!(b instanceof ValueOnlyBracket<?>))
 				throw new IllegalStateException("Cannot change bracketing of a sealed SealableValue");
 		}
 		super._addAnyValueBracket(openNow, b);

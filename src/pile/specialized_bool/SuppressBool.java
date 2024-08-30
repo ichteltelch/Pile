@@ -7,9 +7,11 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import pile.aspect.ValueBracket.ValueOnlyBracket;
+import pile.aspect.bracket.ValueBracket;
+import pile.aspect.bracket.ValueOnlyBracket;
 import pile.aspect.combinations.Pile;
 import pile.aspect.suppress.Suppressor;
+import pile.interop.debug.DebugEnabled;
 import pile.interop.exec.StandardExecutors;
 import pile.specialized_int.MutInt;
 import pile.specialized_int.SuppressInt;
@@ -77,13 +79,13 @@ public class SuppressBool extends IndependentBool{
 	 * <code>true</code> until it is released.
 	 */
 	public Suppressor suppress() {
-		Suppressor s = Suppressor.wrap(this::decrement);
-		increment(s);
+		Suppressor s = Suppressor.wrap(this::__decrement);
+		__increment(s);
 		if(asyncRelease!=null)
 			return s.wrapAsync(asyncRelease);
 		return s;
 	}
-	private void decrement() {		
+	public void __decrement() {		
 		if(asyncChange!=null) {
 			synchronized (setter) {
 				--suppressors;
@@ -103,7 +105,11 @@ public class SuppressBool extends IndependentBool{
 			}
 		}
 	}
-	private void increment(Suppressor ss) {
+	public void __increment() {
+		__increment(null);
+	}
+
+	private void __increment(Suppressor ss) {
 		Suppressor s=null;
 		try {
 			if(asyncChange!=null) {
@@ -152,9 +158,9 @@ public class SuppressBool extends IndependentBool{
 	 * @param crit: Important: This must predicate always evaluate to the same result for the same object! 
 	 * @return
 	 */
-	public <T> ValueOnlyBracket<T> suppressBracket(boolean inheritable, Predicate<? super T> crit) {
+	public <T> ValueBracket<T, Object> suppressBracket(boolean inheritable, Predicate<? super T> crit) {
 		MutInt openCount = new MutInt(); 
-		ValueOnlyBracket<T> ret = new ValueOnlyBracket<T>() {
+		ValueBracket<T, Object> ret = new ValueOnlyBracket<T>() {
 			@Override
 			public boolean isInheritable() {
 				return inheritable;
@@ -165,17 +171,17 @@ public class SuppressBool extends IndependentBool{
 					boolean success = false;
 					try {
 						
-						increment(null);
+						__increment(null);
 						success = true;
 						synchronized (openCount) {
 							++openCount.val;
 						}
 					}finally {
 						if(!success)
-							decrement();
+							__decrement();
 					}
 				}
-				return false;
+				return true;
 			}
 			@Override
 			public boolean close(T value, Object owner) {
@@ -183,16 +189,20 @@ public class SuppressBool extends IndependentBool{
 					synchronized (openCount) {
 						--openCount.val;
 					}
-					decrement();
+					__decrement();
 				}
 				return false;
 			}
 			@Override
-			public boolean nopOpen() {
+			public boolean openIsNop() {
 				return false;
 			}
 			@Override
-			public boolean nopClose() {
+			public boolean closeIsNop() {
+				return false;
+			}
+			@Override
+			public boolean canBecomeObsolete() {
 				return false;
 			}
 		};
@@ -206,7 +216,7 @@ public class SuppressBool extends IndependentBool{
 				try {
 					while(times>0) {
 						times--;
-						decrement();
+						__decrement();
 					}
 				}finally {
 					if(times>0) {
@@ -221,6 +231,9 @@ public class SuppressBool extends IndependentBool{
 			}
 			
 		});
+		if(DebugEnabled.DETECT_STUCK_BRACKETS)
+			ret=ret.detectStuck();
+
 		return ret;
 	}
 	/**

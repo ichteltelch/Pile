@@ -27,6 +27,7 @@ import pile.aspect.HasAssociations;
 import pile.aspect.LazyValidatable;
 import pile.aspect.VetoException;
 import pile.aspect.combinations.Pile;
+import pile.aspect.listen.ListenValue;
 import pile.aspect.listen.ValueEvent;
 import pile.aspect.recompute.DependencyRecorder;
 import pile.aspect.recompute.Recomputation;
@@ -268,8 +269,8 @@ implements Pile<E>, HasAssociations.Mixin
 	//	private Object scoutMutex;
 	@Override
 	public void setDependencyEssential(boolean essential, Dependency d) {
-//		if(d==null)
-//			throw new IllegalArgumentException();
+		//		if(d==null)
+		//			throw new IllegalArgumentException();
 		if(essential) {
 			d.__setEssentialFor(this, true);
 			synchronized (mutex) {
@@ -508,6 +509,9 @@ implements Pile<E>, HasAssociations.Mixin
 	 */
 	static final ThreadLocal<MutInt> recomputationDepth = new ThreadLocal<>();
 	private void ___startPendingRecompute(boolean force, boolean _scout) {
+		ListenValue.DEFER.run(()->___startPendingRecompute_undeferred(force, _scout));
+	}
+	private void ___startPendingRecompute_undeferred(boolean force, boolean _scout) {
 		final Consumer<? super Recomputation<E>> rc;
 		WrapWeak<E> ww;
 		int deactivate;
@@ -759,7 +763,7 @@ implements Pile<E>, HasAssociations.Mixin
 	int fulfillNesting;
 	private static final class MyRecomputation<E> implements Recomputation<E>{
 
-//		static AtomicInteger counter = new AtomicInteger();
+		//		static AtomicInteger counter = new AtomicInteger();
 		volatile Thread t;
 		Future<?> f;
 		boolean finished;
@@ -775,8 +779,8 @@ implements Pile<E>, HasAssociations.Mixin
 		HashSet<Dependency> recorded;
 
 		public MyRecomputation(PileImpl<E> outer, boolean ta, boolean scout) {
-//			if(scout)
-//				System.out.println("Started scouting recomputation #"+counter.incrementAndGet()+ ", this one for "+outer.dependencyName());
+			//			if(scout)
+			//				System.out.println("Started scouting recomputation #"+counter.incrementAndGet()+ ", this one for "+outer.dependencyName());
 			this.outer=new WeakCleanupWithRunnable<PileImpl<E>>(outer, this::cancel);
 			transactionActive=ta;
 			this.scout = scout;
@@ -1395,7 +1399,7 @@ implements Pile<E>, HasAssociations.Mixin
 			StandardExecutors.unlimited().execute(()->{
 				__dependOnRecorded(outer, rec);
 			});
-			*/
+			 */
 			__dependOnRecorded(outer, rec);
 
 		}
@@ -1543,33 +1547,38 @@ implements Pile<E>, HasAssociations.Mixin
 		boolean recomputationWasScheduledOrOngoing;
 		boolean recomputationWasScout;
 		Recomputer<E> recompute;
-		synchronized (mutex) {
-			if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
-				System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
-			}
-			//			if(selWasValid && !wasValid) {
-			//				if(latecomers==null)
-			//					latecomers=new HashSet<>();
-			//				latecomers.add(d);
-			//			}else {
-			//				if(latecomers!=null)
-			//					latecomers.remove(d);
-			//			}
-
-			invalidated=false;
-			if(changingDependencies==null)
-				changingDependencies=new HashSet<Dependency>();
-			if(!changingDependencies.add(d)) {
-				try {
-					throw new IllegalStateException("Dependency was already changing");
-				}catch(IllegalStateException x) {
-					x.printStackTrace();
+		try {
+			ListenValue.DEFER.__incrementSuppressors();
+			synchronized (mutex) {
+				if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
+					System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 				}
+				//			if(selWasValid && !wasValid) {
+				//				if(latecomers==null)
+				//					latecomers=new HashSet<>();
+				//				latecomers.add(d);
+				//			}else {
+				//				if(latecomers!=null)
+				//					latecomers.remove(d);
+				//			}
+
+				invalidated=false;
+				if(changingDependencies==null)
+					changingDependencies=new HashSet<Dependency>();
+				if(!changingDependencies.add(d)) {
+					try {
+						throw new IllegalStateException("Dependency was already changing");
+					}catch(IllegalStateException x) {
+						x.printStackTrace();
+					}
+				}
+				dependencyTransactions++;
+				recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
+				recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
+				recompute = this.recompute;
 			}
-			dependencyTransactions++;
-			recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
-			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
-			recompute = this.recompute;
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();
 		}
 		if(wasValid) {
 			fireDeepRevalidate();
@@ -1603,6 +1612,8 @@ implements Pile<E>, HasAssociations.Mixin
 		////			scheduleRecomputation(false);
 		//			startPendingRecompute(true);
 		//		}
+
+
 	}
 	@Override
 	public void escalateDependencyChange(Dependency d) {
@@ -1692,7 +1703,6 @@ implements Pile<E>, HasAssociations.Mixin
 
 	@Override
 	public void dependencyEndsChanging(Dependency d, boolean changed) {
-
 		//		boolean success=false;
 
 		//		if(avName=="implantsActivity") {
@@ -1702,76 +1712,80 @@ implements Pile<E>, HasAssociations.Mixin
 		//					System.out.println();
 		//			}
 		//		}
+		boolean scout = false;
 		try {
 			if(DE && dc!=null) dc.dependencyEndsChanging(this, d);
 
 			boolean wasValid;
 
-			synchronized (mutex) {
-				if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
-					System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
-				}
-				if(changingDependencies==null)
-					throw new IllegalStateException("There are no changing dependencies!");
-
-				if(changingDependencies.remove(d)) {
-					if(changed) {
-						if(changedDependencies==null)
-							changedDependencies=new HashSet<>();
-						changedDependencies.add(d);
-					}
-					dependencyTransactions--;
-					invalidated=false;
-				}else {
-					_printConstructionStackTrace();
-					d._printConstructionStackTrace();
-					throw new IllegalStateException("This was not a changing dependency!");
-				}
-				changed |= changedDependencies!=null && !changedDependencies.isEmpty();
-				synchronized(invalidDependenciesMutex) {
-					//					checkForDestroyedDeps();
-
-					if(invalidDependencies==null)
-						invalidDependencies=new HashSet<>();
-					if(d.isValidAsync() || !dependsOn(d))
-						invalidDependencies.remove(d);
-					else
-						invalidDependencies.add(d);
-					//					checkForDestroyedDeps();
-
-				}
-				wasValid=valid;
-				//				changed |= this.canRecomputeWithInvalidDependencies && !valid;
-			}
-			//			success=true;
-
-			boolean scout = false;
-			if(recompute!=null && recompute.useDependencyScouting() 
-					//					&& recompute.useDependencyScoutingIfInvalid(null)
-					) {
-				scout=true;
+			try {
+				ListenValue.DEFER.__incrementSuppressors();
 				synchronized (mutex) {
-					for(Dependency d2: _thisDependsOn) {
-						//						if(d2!=d && d2.isValidAsync())
-						//							continue;
-						if(!d2.isValidAsync()) {
-							//							if(essentialDependencies!=null && essentialDependencies.contains(d2)) {
-							if(!recompute.mayRemoveDynamicDependency(d2, this)) {
-								//We have an invalid dependency that may not be removed
-								// -> scouting would not work
-								scout=false;
-								break;
-							}
-							//							}
+					if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
+						System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
+					}
+					if(changingDependencies==null)
+						throw new IllegalStateException("There are no changing dependencies!");
+
+					if(changingDependencies.remove(d)) {
+						if(changed) {
+							if(changedDependencies==null)
+								changedDependencies=new HashSet<>();
+							changedDependencies.add(d);
 						}
-						//						if(recompute.useDependencyScoutingIfInvalid(d2)) {
-						//							scout=true;
-						//							break;
-						//						}
+						dependencyTransactions--;
+						invalidated=false;
+					}else {
+						_printConstructionStackTrace();
+						d._printConstructionStackTrace();
+						throw new IllegalStateException("This was not a changing dependency!");
+					}
+					changed |= changedDependencies!=null && !changedDependencies.isEmpty();
+					synchronized(invalidDependenciesMutex) {
+						//					checkForDestroyedDeps();
+
+						if(invalidDependencies==null)
+							invalidDependencies=new HashSet<>();
+						if(d.isValidAsync() || !dependsOn(d))
+							invalidDependencies.remove(d);
+						else
+							invalidDependencies.add(d);
+						//					checkForDestroyedDeps();
+
+					}
+					wasValid=valid;
+					//				changed |= this.canRecomputeWithInvalidDependencies && !valid;
+				}
+				//			success=true;
+
+				if(recompute!=null && recompute.useDependencyScouting() 
+						//					&& recompute.useDependencyScoutingIfInvalid(null)
+						) {
+					scout=true;
+					synchronized (mutex) {
+						for(Dependency d2: _thisDependsOn) {
+							//						if(d2!=d && d2.isValidAsync())
+							//							continue;
+							if(!d2.isValidAsync()) {
+								//							if(essentialDependencies!=null && essentialDependencies.contains(d2)) {
+								if(!recompute.mayRemoveDynamicDependency(d2, this)) {
+									//We have an invalid dependency that may not be removed
+									// -> scouting would not work
+									scout=false;
+									break;
+								}
+								//							}
+							}
+							//						if(recompute.useDependencyScoutingIfInvalid(d2)) {
+							//							scout=true;
+							//							break;
+							//						}
+						}
 					}
 				}
+			}finally {
+				ListenValue.DEFER.__decrementSuppressors();
 			}
-
 			if(scout) {
 				__scheduleRecomputation(true, true);
 				__startPendingRecompute(true, true);
@@ -1792,6 +1806,8 @@ implements Pile<E>, HasAssociations.Mixin
 			//			if(!success)
 			//				System.out.println();
 		}
+
+
 	}
 	@Override
 	public Suppressor suppressAutoValidation() {
@@ -2783,39 +2799,44 @@ implements Pile<E>, HasAssociations.Mixin
 	@Override
 	public void __endTransaction(boolean changedIfOldInvalid) {
 		super.__endTransaction(changedIfOldInvalid);
-		boolean bv;
-		boolean needDeepRevalidate;
-		synchronized (mutex) {
-			bv=valid;
+		try {
+			ListenValue.DEFER.__incrementSuppressors();
+			boolean bv;
+			boolean needDeepRevalidate;
+			synchronized (mutex) {
+				bv=valid;
 
-			if(ET_TRACE && traceEnabledFor(this) && bv) {
-				ReadListenDependencyBool validity = this.validity;
-				if(validity!=null && !Boolean.TRUE.equals(validity.getAsync()))
-					synchronized(trace) {System.out.println(trace);}
-			}
-			if(bv) {
-				if(dependOnThis==null || dependOnThis.isEmpty()) {
-					;
-				}else {
-					for(WeakIdentityCleanup<Depender> dd: dependOnThis) {
-						Depender d =dd.get();
-						if(d!=null)
-							d.__dependencyIsNowValid(this);
-					}
+				if(ET_TRACE && traceEnabledFor(this) && bv) {
+					ReadListenDependencyBool validity = this.validity;
+					if(validity!=null && !Boolean.TRUE.equals(validity.getAsync()))
+						synchronized(trace) {System.out.println(trace);}
 				}
-			}else{
-			}
-			synchronized (invalidDependenciesMutex) {
-				needDeepRevalidate = valid && (
-						(invalidDependencies!=null && !invalidDependencies.isEmpty())
-						||
-						(changingDependencies!=null && !changingDependencies.isEmpty())
-						)
+				if(bv) {
+					if(dependOnThis==null || dependOnThis.isEmpty()) {
 						;
-			}	
+					}else {
+						for(WeakIdentityCleanup<Depender> dd: dependOnThis) {
+							Depender d =dd.get();
+							if(d!=null)
+								d.__dependencyIsNowValid(this);
+						}
+					}
+				}else{
+				}
+				synchronized (invalidDependenciesMutex) {
+					needDeepRevalidate = valid && (
+							(invalidDependencies!=null && !invalidDependencies.isEmpty())
+							||
+							(changingDependencies!=null && !changingDependencies.isEmpty())
+							)
+							;
+				}	
+			}
+			//		if(!needDeepRevalidate)
+			__thisNeedsDeepRevalidate(needDeepRevalidate);
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();
 		}
-		//		if(!needDeepRevalidate)
-		__thisNeedsDeepRevalidate(needDeepRevalidate);
 	}
 
 	//	@Override

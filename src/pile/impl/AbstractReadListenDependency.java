@@ -24,12 +24,14 @@ import java.util.logging.Logger;
 
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
-import pile.aspect.HasBrackets;
-import pile.aspect.ValueBracket;
+import pile.aspect.HasInternalLock;
 import pile.aspect.WriteValue;
+import pile.aspect.bracket.HasBrackets;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.Pile;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.listen.ListenValue;
+import pile.aspect.listen.ValueEvent;
 import pile.aspect.listen.ValueListener;
 import pile.aspect.recompute.Recomputation;
 import pile.aspect.recompute.Recomputations;
@@ -51,8 +53,11 @@ import pile.utils.WeakIdentityCleanup;
  * @param <E>
  */
 public abstract class AbstractReadListenDependency<E> 
-implements ReadListenDependency<E>, 
-ListenValue.Managed{
+implements 
+ReadListenDependency<E>, 
+ListenValue.Managed,
+HasInternalLock
+{
 	private final static Logger log=Logger.getLogger("Value");
 
 
@@ -183,6 +188,11 @@ ListenValue.Managed{
 	 * The main mutex and monitor of this object.
 	 */
 	final protected Object mutex=new Object();
+	@Override
+	public boolean holdsLock() {
+		return Thread.holdsLock(mutex);
+	}
+
 
 	/**
 	 * This lazily initialized {@link ListenerManager} managed the {@link ValueListener}s registered with this
@@ -237,7 +247,11 @@ ListenValue.Managed{
 			synchronized (mutex) {
 				localRef = listeners;
 				if (localRef == null) {
-					listeners = localRef = new ListenerManager(this);
+					listeners = localRef = new ListenerManager(this) {
+						public void fireValueChange(ValueEvent e) {
+							ListenValue.DEFER.run(()->super.fireValueChange(e));
+						}
+					};
 				}
 			}
 		}
@@ -264,6 +278,7 @@ ListenValue.Managed{
 			}
 		}
 	}
+
 	@Override
 	public void __addDepender(Depender d, boolean propagateInvalidity) {
 		if(d==this)
@@ -330,7 +345,7 @@ ListenValue.Managed{
 		try {
 			WaitService.get().sleep(delay);
 		} catch (InterruptedException e) {
-//			e.printStackTrace();
+			//			e.printStackTrace();
 			WaitService.get().interruptSelf(e);
 			return;
 		}
@@ -347,6 +362,12 @@ ListenValue.Managed{
 	 * if that'S ever relevant anyway. And at least we don't get a game-breaking deadlock forever. 
 	 */
 	public void __workInformQueue(boolean evade) {
+		//		ListenValue.DEFER.run(evade?workInformQueue__undeferred_evade:workInformQueue__undeferred_no_evade);
+		____workInformQueue__undeferred(evade);
+	}
+	//	private Runnable workInformQueue__undeferred_evade = ()->____workInformQueue__undeferred(true);
+	//	private Runnable workInformQueue__undeferred_no_evade = ()->____workInformQueue__undeferred(false);
+	public void ____workInformQueue__undeferred(boolean evade) {
 		assert !Thread.holdsLock(mutex);
 		if(Thread.holdsLock(informRunnerMutex))
 			return;
@@ -415,15 +436,15 @@ ListenValue.Managed{
 						if(DE)
 							DebugEnabled.stopIfRequested();
 						synchronized (informRunnerMutex) {
-//							if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
-//								System.out.println();
+							//							if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
+							//								System.out.println();
 
 							amRunning=false;
 							assert someThreadIsWorkingInformQueue==Thread.currentThread();
 							someThreadIsWorkingInformQueue=null;
 							WaitService.get().notifyAll(informRunnerMutex);
-//							if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
-//								System.out.println();
+							//							if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
+							//								System.out.println();
 
 						}	
 						break;
@@ -436,10 +457,10 @@ ListenValue.Managed{
 						log.log(Level.INFO, "Isolated an error", t);
 					}		
 				}
-//				synchronized (informRunnerMutex) {
-//					if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
-//						System.out.println();
-//				}
+				//				synchronized (informRunnerMutex) {
+				//					if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
+				//						System.out.println();
+				//				}
 
 				synchronized(informQueue) {
 					if(informQueue.isEmpty())
@@ -497,8 +518,8 @@ ListenValue.Managed{
 		}
 		if(wiq)
 			__workInformQueue();
-//			StandardExecutors.unlimited().execute(this::__workInformQueue);
-			
+		//			StandardExecutors.unlimited().execute(this::__workInformQueue);
+
 	}
 
 	/**
@@ -515,7 +536,7 @@ ListenValue.Managed{
 	 */
 	protected boolean beginTransaction(boolean workInformQueue) {
 		return beginTransaction(workInformQueue, true, false);
-		
+
 	}
 	/**
 	 * Begins a new transaction.
@@ -531,102 +552,106 @@ ListenValue.Managed{
 	protected boolean beginTransaction(boolean workInformQueue, boolean moveValueToOldValue, boolean scout) {
 		if(DE && dc!=null) dc.beginTransactionCalled(this);
 		boolean wasValid;
-//		moveValueToOldValue &=! scout;
+		//		moveValueToOldValue &=! scout;
 		try {
-			boolean inform;
+			try {
+				ListenValue.DEFER.__incrementSuppressors();
+				boolean inform;
 
-			synchronized (mutex) {
-				if(ET_TRACE && traceEnabledFor(this))trace("(begin transaction)");
+				synchronized (mutex) {
+					if(ET_TRACE && traceEnabledFor(this))trace("(begin transaction)");
 
-				wasValid=__valid();
-				if(ET_TRACE && traceEnabledFor(this))trace("was valid: "+wasValid);
+					wasValid=__valid();
+					if(ET_TRACE && traceEnabledFor(this))trace("was valid: "+wasValid);
 
-				inform = wasValid;
+					inform = wasValid;
 
-				assert openTransactions>=0;
-				if(openTransactions<=0) {
-					//enter transaction mode
-					openTransactions=1;
-					if(DE) __checkTransactionReasonCount(openTransactions);
-					setInTransaction.accept(Boolean.TRUE);
-					if(ET_TRACE && traceEnabledFor(this))trace("entered transaction mode");
+					assert openTransactions>=0;
+					if(openTransactions<=0) {
+						//enter transaction mode
+						openTransactions=1;
+						if(DE) __checkTransactionReasonCount(openTransactions);
+						setInTransaction.accept(Boolean.TRUE);
+						if(ET_TRACE && traceEnabledFor(this))trace("entered transaction mode");
 
 
-					inform=true;
-					//Remember the value at the start of the transaction
-					if(moveValueToOldValue)
-						if(scout)
-							copyValueToOldValue();
-						else
+						inform=true;
+						//Remember the value at the start of the transaction
+						if(moveValueToOldValue)
+							if(scout)
+								copyValueToOldValue();
+							else
+								moveValueToOldValue();
+					}else {
+						//Already in a transaction
+						//Just increase the transaction counter
+						++openTransactions;
+						if(DE) __checkTransactionReasonCount(openTransactions);
+
+						if(ET_TRACE && traceEnabledFor(this))trace("open another transaction");
+
+						//inform=!valid();
+						inform=true;
+
+						if(moveValueToOldValue && __valid()) {
 							moveValueToOldValue();
-				}else {
-					//Already in a transaction
-					//Just increase the transaction counter
-					++openTransactions;
-					if(DE) __checkTransactionReasonCount(openTransactions);
+						}
 
-					if(ET_TRACE && traceEnabledFor(this))trace("open another transaction");
-
-					//inform=!valid();
-					inform=true;
-
-					if(moveValueToOldValue && __valid()) {
-						moveValueToOldValue();
 					}
 
-				}
-				
-				inform &=! scout;
+					inform &=! scout;
 
-				//collect the Dependers that should also be in 
-				//transaction mode while this is
-				if(inform && dependOnThis!=null) {
-					assert !Thread.holdsLock(informQueue);
-					// assert !Thread.holdsLock(informRunnerMutex);
-					if(ET_TRACE && traceEnabledFor(this))trace("schedule informing of dependers that I have become invalid");
-//					StackTraceElement[] cause = Thread.currentThread().getStackTrace();
-					synchronized (informQueue) {
-						informQueue.add(()->{
-							if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers that I have become invalid");
-							if(informed==null)
-								informed=new HashSet<>();
-							else {
-								//assert informed.isEmpty();
-							}
-//							cause.clone();
-							WeakIdentityCleanup<Depender>[] deparr;
-							synchronized (mutex) {
-								if(dependOnThis==null || dependOnThis.isEmpty())
-									return;
-								@SuppressWarnings("unchecked")
-								WeakIdentityCleanup<Depender>[] arr = dependOnThis.toArray(new WeakIdentityCleanup[dependOnThis.size()]);
-								deparr=arr;
-							}
-							assert !Thread.holdsLock(mutex);
+					//collect the Dependers that should also be in 
+					//transaction mode while this is
+					if(inform && dependOnThis!=null) {
+						assert !Thread.holdsLock(informQueue);
+						// assert !Thread.holdsLock(informRunnerMutex);
+						if(ET_TRACE && traceEnabledFor(this))trace("schedule informing of dependers that I have become invalid");
+						//					StackTraceElement[] cause = Thread.currentThread().getStackTrace();
+						synchronized (informQueue) {
+							informQueue.add(()->{
+								if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers that I have become invalid");
+								if(informed==null)
+									informed=new HashSet<>();
+								else {
+									//assert informed.isEmpty();
+								}
+								//							cause.clone();
+								WeakIdentityCleanup<Depender>[] deparr;
+								synchronized (mutex) {
+									if(dependOnThis==null || dependOnThis.isEmpty())
+										return;
+									@SuppressWarnings("unchecked")
+									WeakIdentityCleanup<Depender>[] arr = dependOnThis.toArray(new WeakIdentityCleanup[dependOnThis.size()]);
+									deparr=arr;
+								}
+								assert !Thread.holdsLock(mutex);
 
-							for(WeakIdentityCleanup<Depender> dr: deparr) {
-								Depender d=dr.get();
-								if(d!=null) {
-									if(informed.add(d)) {
-										if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers "+d);
-										d.dependencyBeginsChanging(this, wasValid, moveValueToOldValue);
-									}else {
-										if(wasValid && moveValueToOldValue)
-											d.escalateDependencyChange(this);
+								for(WeakIdentityCleanup<Depender> dr: deparr) {
+									Depender d=dr.get();
+									if(d!=null) {
+										if(informed.add(d)) {
+											if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers "+d);
+											d.dependencyBeginsChanging(this, wasValid, moveValueToOldValue);
+										}else {
+											if(wasValid && moveValueToOldValue)
+												d.escalateDependencyChange(this);
+										}
 									}
 								}
-							}
 
-						});
+							});
+						}
+
+					}else {
+						if(ET_TRACE && traceEnabledFor(this))trace("not informing dependers");
 					}
 
-				}else {
-					if(ET_TRACE && traceEnabledFor(this))trace("not informing dependers");
+
 				}
-
-
-			}
-			//Actually propagate the transaction to the dependers
+			}finally {
+				ListenValue.DEFER.__decrementSuppressors();
+			}					//Actually propagate the transaction to the dependers
 		}finally {
 			if(workInformQueue) {
 				assert !Thread.holdsLock(mutex);
@@ -634,6 +659,8 @@ ListenValue.Managed{
 			}
 		}
 		return wasValid;
+
+
 	}
 	/**
 	 * For debugging
@@ -683,110 +710,115 @@ ListenValue.Managed{
 		//		boolean changedToInvalid=false;
 		//		boolean firedChange=false;
 		try {
-			//cancelPendingRecomputation();
-			synchronized (mutex) {
+			try {
+				ListenValue.DEFER.__incrementSuppressors();
+				//cancelPendingRecomputation();
+				synchronized (mutex) {
 
-				//				wasValid=valid();
-				wasLongTermInvalid=!observedValid();
-				if(ET_TRACE && traceEnabledFor(this))synchronized(trace) {trace.clear();}
-				if(openTransactions==0) {
-					if(ET_TRACE && traceEnabledFor(this))trace("No running transaction, ");
-					throw new IllegalStateException("No running transaction");
-				}
-				--openTransactions;
-				if(DE) __checkTransactionReasonCount(openTransactions);
-
-
-				try {
-					if(openTransactions<=0) {
-						if(ET_TRACE && traceEnabledFor(this))trace("All transactions closed");
-					}else {
-						if(ET_TRACE && traceEnabledFor(this))trace(openTransactions+"open transactions remaining");
-						if(openTransactions<=__recomputerTransactions())
-							if(ET_TRACE && traceEnabledFor(this))trace("(all of them for recomputation)");
-
-					}
-					if(__valid()) {
-						inform=true;
-						startRecomputation=false;
-						cancelRecomputation=true;
-						if(ET_TRACE && traceEnabledFor(this))trace("Valid on transaction close");
-						__clearChangedDependencies();
-						changed=noChangedDependencies(changedIfOldInvalid);
-						if(ET_TRACE && traceEnabledFor(this))trace("Changed: "+changed);
-						//						changedToInvalid=false;
-					}else {
-						if(ET_TRACE && traceEnabledFor(this))trace("Invalid on transaction close");
-						if(__shouldRemainInvalid()) {
-							if(ET_TRACE && traceEnabledFor(this))trace("Should remain invalid");
-							startRecomputation=false;
-							inform=false;
-							changed=false;
-						}else if(openTransactions>0){
-							startRecomputation=openTransactions<=__recomputerTransactions() && __hasChangedDependencies();
-							cancelRecomputation=!startRecomputation;
-							inform=false;
-							changed=false;
-						}else{
-							if(!__hasChangedDependencies()) {
-								if(ET_TRACE && traceEnabledFor(this))trace("no changed dependencies");
-								changed=noChangedDependencies(changedIfOldInvalid);
-								startRecomputation=true;
-							}else {
-								if(ET_TRACE && traceEnabledFor(this))trace("changed dependencies");
-								if(openTransactions<=__recomputerTransactions()) {
-									if(ET_TRACE && traceEnabledFor(this))trace("recomputing: "+openTransactions+" <= "+__recomputerTransactions());
-									startRecomputation=true;
-								}
-								if(openTransactions==0)
-									changed=true;
-								else
-									changed=false;
-							}
-							inform=__valid();
-						}
-						//						changedToInvalid = !valid() && openTransactions==0;
-
-					}
-					if(ET_TRACE && traceEnabledFor(this))trace("changed: "+changed+", startRecomputation: "+startRecomputation);
-
-
-					if(openTransactions<=0 && !startRecomputation) {
-						closeOldBrackets();
-					}
-					assert !Thread.holdsLock(informQueue);
-
-
-					if(inform) {
-						synchronized (informQueue) {
-							//StackTraceElement[] cause = Thread.currentThread().getStackTrace();
-							informQueue.add(()->{
-								if(informed==null)
-									return;
-								//cause.clone();
-								Depender[] notify = informed.toArray(new Depender[informed.size()]);
-								informed.clear();
-								for(Depender d: notify) {
-									if(ET_TRACE && traceEnabledFor(this))trace("un-inform: "+d);
-									d.dependencyEndsChanging(this, changed);
-								}
-							});
-						}
-					}
-
-
-				}finally {
+					//				wasValid=valid();
+					wasLongTermInvalid=!observedValid();
+					if(ET_TRACE && traceEnabledFor(this))synchronized(trace) {trace.clear();}
 					if(openTransactions==0) {
-						setInTransaction.accept(false);
-
-
+						if(ET_TRACE && traceEnabledFor(this))trace("No running transaction, ");
+						throw new IllegalStateException("No running transaction");
 					}
-				}
-				becameLongTermValid = wasLongTermInvalid && __valid();
-				//				startRecomputation |= canRecomputeWithInvalidDependencies() && !valid();
+					--openTransactions;
+					if(DE) __checkTransactionReasonCount(openTransactions);
 
+
+					try {
+						if(openTransactions<=0) {
+							if(ET_TRACE && traceEnabledFor(this))trace("All transactions closed");
+						}else {
+							if(ET_TRACE && traceEnabledFor(this))trace(openTransactions+"open transactions remaining");
+							if(openTransactions<=__recomputerTransactions())
+								if(ET_TRACE && traceEnabledFor(this))trace("(all of them for recomputation)");
+
+						}
+						if(__valid()) {
+							inform=true;
+							startRecomputation=false;
+							cancelRecomputation=true;
+							if(ET_TRACE && traceEnabledFor(this))trace("Valid on transaction close");
+							__clearChangedDependencies();
+							changed=noChangedDependencies(changedIfOldInvalid);
+							if(ET_TRACE && traceEnabledFor(this))trace("Changed: "+changed);
+							//						changedToInvalid=false;
+						}else {
+							if(ET_TRACE && traceEnabledFor(this))trace("Invalid on transaction close");
+							if(__shouldRemainInvalid()) {
+								if(ET_TRACE && traceEnabledFor(this))trace("Should remain invalid");
+								startRecomputation=false;
+								inform=false;
+								changed=false;
+							}else if(openTransactions>0){
+								startRecomputation=openTransactions<=__recomputerTransactions() && __hasChangedDependencies();
+								cancelRecomputation=!startRecomputation;
+								inform=false;
+								changed=false;
+							}else{
+								if(!__hasChangedDependencies()) {
+									if(ET_TRACE && traceEnabledFor(this))trace("no changed dependencies");
+									changed=noChangedDependencies(changedIfOldInvalid);
+									startRecomputation=true;
+								}else {
+									if(ET_TRACE && traceEnabledFor(this))trace("changed dependencies");
+									if(openTransactions<=__recomputerTransactions()) {
+										if(ET_TRACE && traceEnabledFor(this))trace("recomputing: "+openTransactions+" <= "+__recomputerTransactions());
+										startRecomputation=true;
+									}
+									if(openTransactions==0)
+										changed=true;
+									else
+										changed=false;
+								}
+								inform=__valid();
+							}
+							//						changedToInvalid = !valid() && openTransactions==0;
+
+						}
+						if(ET_TRACE && traceEnabledFor(this))trace("changed: "+changed+", startRecomputation: "+startRecomputation);
+
+
+						if(openTransactions<=0 && !startRecomputation) {
+							closeOldBrackets();
+						}
+						assert !Thread.holdsLock(informQueue);
+
+
+						if(inform) {
+							synchronized (informQueue) {
+								//StackTraceElement[] cause = Thread.currentThread().getStackTrace();
+								informQueue.add(()->{
+									if(informed==null)
+										return;
+									//cause.clone();
+									Depender[] notify = informed.toArray(new Depender[informed.size()]);
+									informed.clear();
+									for(Depender d: notify) {
+										if(ET_TRACE && traceEnabledFor(this))trace("un-inform: "+d);
+										d.dependencyEndsChanging(this, changed);
+									}
+								});
+							}
+						}
+
+
+					}finally {
+						if(openTransactions==0) {
+							setInTransaction.accept(false);
+
+
+						}
+					}
+					becameLongTermValid = wasLongTermInvalid && __valid();
+					//				startRecomputation |= canRecomputeWithInvalidDependencies() && !valid();
+
+				}
+				assert !Thread.holdsLock(mutex);
+			}finally {
+				ListenValue.DEFER.__decrementSuppressors();
 			}
-			assert !Thread.holdsLock(mutex);
 
 
 			__workInformQueue();
@@ -804,7 +836,7 @@ ListenValue.Managed{
 			//
 			//			}
 			if(startRecomputation
-//					&& !StandardExecutors.interrupted()
+					//					&& !StandardExecutors.interrupted()
 					) {
 				//				if(canRecomputeWithInvalidDependencies())
 				//					System.out.println();
@@ -965,7 +997,7 @@ ListenValue.Managed{
 		if(__valid()) {
 			//Apparently the value was set manually during the transaction
 			if(__oldValid()) {
-				
+
 				changed = !equivalence.test(__value(), __oldValue());
 				if(changed)
 					if(ET_TRACE && traceEnabledFor(this))trace("old differs from new");
@@ -1126,7 +1158,7 @@ ListenValue.Managed{
 		return cancelPendingRecomputation(cancelOngoing, true);
 
 	}
-	
+
 	/**
 	 * Cancel any pending non-scouting recomputation, and possibly also an ongoing one.
 	 * The current thread must <em>not</em> have locked {@link #mutex}.
@@ -1363,6 +1395,7 @@ ListenValue.Managed{
 
 	@Override
 	public void _addValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
+		Objects.requireNonNull(b);
 		synchronized (mutex) {
 			if(destroyed)
 				return;
@@ -1383,6 +1416,7 @@ ListenValue.Managed{
 	}
 	@Override
 	public void _addOldValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
+		Objects.requireNonNull(b);
 		synchronized (mutex) {
 			if(destroyed)
 				return;
@@ -1403,6 +1437,7 @@ ListenValue.Managed{
 	}
 	@Override
 	public void _addAnyValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
+		Objects.requireNonNull(b);
 		synchronized (mutex) {
 			if(destroyed)
 				return;
@@ -1425,7 +1460,7 @@ ListenValue.Managed{
 						}catch(Exception|AssertionError x) {
 							log.log(Level.WARNING, "Exception while opening bracket: ",x);
 						}
-						
+
 						E oldValue = __oldValue();
 						if(value!=oldValue)
 							b.open(oldValue, this);
@@ -1691,16 +1726,16 @@ ListenValue.Managed{
 	public void __shouldFireDeepRevalidateOnSet(boolean b) {
 		shouldFireDeepRevalidateOnSet = b;	
 	}
-	
+
 	protected void fireDeepRevalidateOnSet() {
 		if(!shouldFireDeepRevalidateOnSet)
 			return;
 		if(!Piles.shouldFireDeepRevalidateOnSet())
 			return;
-		
+
 		fireDeepRevalidate();
 	}
-	
+
 	abstract protected void __scheduleRecomputation(boolean cancelOngoing);
 	public void __fireDeepRevalidate() {fireDeepRevalidate();}
 	/**

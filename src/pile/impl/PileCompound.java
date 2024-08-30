@@ -2,7 +2,7 @@ package pile.impl;
 
 
 import pile.aspect.Depender;
-import pile.aspect.ValueBracket;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.Pile;
 import pile.aspect.listen.ValueEvent;
 import pile.aspect.listen.ValueListener;

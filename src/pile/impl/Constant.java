@@ -6,9 +6,9 @@ import java.util.function.Consumer;
 
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
-import pile.aspect.HasBrackets;
-import pile.aspect.ValueBracket;
 import pile.aspect.WriteValue;
+import pile.aspect.bracket.HasBrackets;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadWriteListenDependency;
 import pile.aspect.listen.ListenValue;

@@ -15,9 +15,9 @@ import java.util.function.Supplier;
 
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
-import pile.aspect.HasBrackets;
 import pile.aspect.ReadValue;
-import pile.aspect.ValueBracket;
+import pile.aspect.bracket.HasBrackets;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.Pile;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.recompute.Recomputation;

@@ -20,9 +20,10 @@ import pile.aspect.HasInfluencers;
 import pile.aspect.LastValueRememberer;
 import pile.aspect.RemembersLastValue;
 import pile.aspect.Sealable;
-import pile.aspect.ValueBracket;
 import pile.aspect.VetoException;
 import pile.aspect.WriteValue;
+import pile.aspect.bracket.ValueBracket;
+import pile.aspect.bracket.ValueOnlyBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteListenDependency;
@@ -204,7 +205,7 @@ HasInfluencers
 	@Override
 	public void _addValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
 		if(sealed!=null) {
-			if(!(b instanceof ValueBracket.ValueOnlyBracket<?>))
+			if(!(b instanceof ValueOnlyBracket<?>))
 				throw new IllegalStateException("Cannot change bracketing of a sealed Independent value");
 		}
 		super._addValueBracket(openNow, b);
@@ -212,7 +213,7 @@ HasInfluencers
 	@Override
 	public void _addOldValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
 		if(sealed!=null) {
-			if(!(b instanceof ValueBracket.ValueOnlyBracket<?>))
+			if(!(b instanceof ValueOnlyBracket<?>))
 				throw new IllegalStateException("Cannot change bracketing of a sealed Independent value");
 		}
 		super._addOldValueBracket(openNow, b);
@@ -220,7 +221,7 @@ HasInfluencers
 	@Override
 	public void _addAnyValueBracket(boolean openNow, ValueBracket<? super E, ? super ReadListenDependency<? extends E>> b) {
 		if(sealed!=null) {
-			if(!(b instanceof ValueBracket.ValueOnlyBracket<?>))
+			if(!(b instanceof ValueOnlyBracket<?>))
 				throw new IllegalStateException("Cannot change bracketing of a sealed Independent value");
 		}
 		super._addAnyValueBracket(openNow, b);

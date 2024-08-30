@@ -8,7 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import pile.aspect.Dependency;
-import pile.aspect.ValueBracket;
+import pile.aspect.bracket.DeadlockDetectingBracket;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.Pile;
 import pile.aspect.recompute.Recomputation;
 import pile.impl.AbstractReadListenDependency;
@@ -38,6 +39,12 @@ public class DebugEnabled {
 	public static final boolean ET_TRACE=DE && true;
 	
 	public static final boolean TRANSACTION_TRACES = false;
+	
+	/**
+	 * Causes all {@link ValueBracket}s created by the library to be wrapped into
+	 * a {@link DeadlockDetectingBracket}.
+	 */
+	public static final boolean DETECT_STUCK_BRACKETS = true;
 	
 	/**
 	 * The set of reactive values for which a detailed trace is saved.
@@ -151,5 +158,6 @@ public class DebugEnabled {
 	public static void stopIfRequested() {
 		stopIfRequested(Thread.currentThread());
 	}
+	
 	
 }

@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import pile.aspect.ValueBracket;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.Pile;
 import pile.aspect.combinations.ReadDependency;
 import pile.aspect.combinations.ReadListenDependency;

@@ -1,4 +1,4 @@
-package pile.aspect;
+package pile.aspect.bracket;
 
 /**
  * Common superinterface for objects that can hold a current and an old value and offer the ability

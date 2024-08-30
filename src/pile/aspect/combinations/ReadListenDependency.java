@@ -1,6 +1,6 @@
 package pile.aspect.combinations;
 
-import pile.aspect.HasBrackets;
+import pile.aspect.bracket.HasBrackets;
 import pile.impl.Piles;
 import pile.impl.SealPile;
 import pile.specialized_bool.combinations.ReadDependencyBool;

@@ -2,7 +2,7 @@ package pile.tests;
 
 
 import pile.aspect.Dependency;
-import pile.aspect.ValueBracket;
+import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.listen.ValueListener;
 import pile.impl.DebugCallback;

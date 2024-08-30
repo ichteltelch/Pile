@@ -993,6 +993,7 @@ HasInternalLock
 	 */
 	private boolean noChangedDependencies(boolean changedIfOldInvalid) {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		boolean changed;
 		if(__valid()) {
 			//Apparently the value was set manually during the transaction
@@ -1214,6 +1215,7 @@ HasInternalLock
 	 */
 	protected void openBrackets() {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		try {
 			if(DebugEnabled.COUNT_BRACKET_LOCKS)
 				++lockedValueMutices.get().val;
@@ -1304,6 +1306,7 @@ HasInternalLock
 	 */
 	protected void openOldBrackets() {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		try {
 			if(DebugEnabled.COUNT_BRACKET_LOCKS)
 				++lockedValueMutices.get().val;
@@ -1347,6 +1350,7 @@ HasInternalLock
 	 */
 	protected boolean closeOldBrackets() {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		try {
 			if(DebugEnabled.COUNT_BRACKET_LOCKS)
 				++lockedValueMutices.get().val;
@@ -1406,9 +1410,11 @@ HasInternalLock
 			brackets.add(b);
 			if(openNow && __valid()) {
 				try {
+					ListenValue.DEFER.__incrementSuppressors();		
 					b.open(__value(), this);
 					activeBrackets.add(b);
 				}catch(Exception|AssertionError x) {
+					ListenValue.DEFER.__decrementSuppressors();		
 					log.log(Level.WARNING, "Exception while opening bracket: ",x);
 				}
 			}
@@ -1427,9 +1433,11 @@ HasInternalLock
 			oldBrackets.add(b);
 			if(openNow && __oldValid()) {
 				try {
+					ListenValue.DEFER.__incrementSuppressors();		
 					b.open(__oldValue(), this);
 					activeOldBrackets.add(b);
 				}catch(Exception|AssertionError x) {
+					ListenValue.DEFER.__decrementSuppressors();
 					log.log(Level.WARNING, "Exception while opening bracket: ",x);
 				}
 			}
@@ -1451,46 +1459,53 @@ HasInternalLock
 				boolean valid = __valid();
 				boolean oldValid = __oldValid();
 				if(valid || oldValid) {
-					if(valid && oldValid) {
-						E value = __value();
-						b.open(value, this);
-						try {
-							if(valid)
-								activeAnyBrackets.add(b);
-						}catch(Exception|AssertionError x) {
-							log.log(Level.WARNING, "Exception while opening bracket: ",x);
-						}
+					try {
+						ListenValue.DEFER.__incrementSuppressors();		
 
-						E oldValue = __oldValue();
-						if(value!=oldValue)
+						if(valid && oldValid) {
+							E value = __value();
+							b.open(value, this);
+							try {
+								if(valid)
+									activeAnyBrackets.add(b);
+							}catch(Exception|AssertionError x) {
+								log.log(Level.WARNING, "Exception while opening bracket: ",x);
+							}
+
+							E oldValue = __oldValue();
+							if(value!=oldValue)
+								b.open(oldValue, this);
+							try {
+								if(oldValid)
+									activeAnyBracketsOnOld.add(b);
+							}catch(Exception|AssertionError x) {
+								log.log(Level.WARNING, "Exception while opening bracket: ",x);
+							}
+
+
+						}else if(valid) {
+							E value = __value();
+							b.open(value, this);
+							try {
+								if(valid)
+									activeAnyBrackets.add(b);
+							}catch(Exception|AssertionError x) {
+								log.log(Level.WARNING, "Exception while opening bracket: ",x);
+							}
+
+						}else {
+							assert oldValid;
+							E oldValue = __oldValue();
 							b.open(oldValue, this);
-						try {
-							if(oldValid)
-								activeAnyBracketsOnOld.add(b);
-						}catch(Exception|AssertionError x) {
-							log.log(Level.WARNING, "Exception while opening bracket: ",x);
+							try {
+								if(valid)
+									activeAnyBracketsOnOld.add(b);
+							}catch(Exception|AssertionError x) {
+								log.log(Level.WARNING, "Exception while opening bracket: ",x);
+							}
 						}
-					}
-
-				}else if(valid) {
-					E value = __value();
-					b.open(value, this);
-					try {
-						if(valid)
-							activeAnyBrackets.add(b);
-					}catch(Exception|AssertionError x) {
-						log.log(Level.WARNING, "Exception while opening bracket: ",x);
-					}
-
-				}else {
-					assert oldValid;
-					E oldValue = __oldValue();
-					b.open(oldValue, this);
-					try {
-						if(valid)
-							activeAnyBracketsOnOld.add(b);
-					}catch(Exception|AssertionError x) {
-						log.log(Level.WARNING, "Exception while opening bracket: ",x);
+					}finally {
+						ListenValue.DEFER.__decrementSuppressors();		
 					}
 				}
 			}

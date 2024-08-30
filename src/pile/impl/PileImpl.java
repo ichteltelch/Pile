@@ -670,19 +670,26 @@ implements Pile<E>, HasAssociations.Mixin
 					//						rc.accept(ww);
 					//					}
 					//				}else {
-					MutInt rd = recomputationDepth.get();
-					if(rd == null)
-						recomputationDepth.set(rd = new MutInt(0));
+					MutInt rd;
+					if(DebugEnabled.DEPTH_WARNING) {
+						rd = recomputationDepth.get();
+						if(rd == null)
+							recomputationDepth.set(rd = new MutInt(0));
 
-					rd.val++;
+						rd.val++;
+					}
 					boolean interrupted = WaitService.get().interrupted();
 					try {
-						if(rd.val>100) {
-							log.warning("very deeply nested recomputation in Pile '"+dependencyName()+"'");
+						if(DebugEnabled.DEPTH_WARNING) {
+							if(rd.val>100) {
+								log.warning("very deeply nested recomputation in Pile '"+dependencyName()+"'");
+							}
 						}
 						rc.accept(ww);
 					}finally {
-						rd.val--;
+						if(DebugEnabled.DEPTH_WARNING) {
+							rd.val--;
+						}
 						if(interrupted)
 							WaitService.get().interruptSelf();
 						else
@@ -914,12 +921,16 @@ implements Pile<E>, HasAssociations.Mixin
 				throw new IllegalStateException("forgetOldValue() may only be called from the recomputatin step");
 			PileImpl<E> outer=this.outer.get();
 			if(outer==null) return;
-
-			synchronized (outer.mutex) {
-				if(this!=outer.ongoingRecomputation)
-					return;
-				if(outer.oldValid)
-					outer.closeOldBrackets();
+			try {
+				ListenValue.DEFER.__incrementSuppressors();		
+				synchronized (outer.mutex) {
+					if(this!=outer.ongoingRecomputation)
+						return;
+					if(outer.oldValid)
+						outer.closeOldBrackets();
+				}
+			}finally {
+				ListenValue.DEFER.__decrementSuppressors();		
 			}
 		}
 
@@ -975,30 +986,37 @@ implements Pile<E>, HasAssociations.Mixin
 							StandardExecutors.safe(()->successHandler.accept(fval));
 						}
 					}
-					synchronized (outer.mutex) {
-						if(this!=outer.ongoingRecomputation || scout || StandardExecutors.interrupted()) {
-							fail = failHandler!=null;
+					try {
+						ListenValue.DEFER.__incrementSuppressors();		
 
-							return depend = this==outer.ongoingRecomputation;
+						synchronized (outer.mutex) {
+							if(this!=outer.ongoingRecomputation || scout || StandardExecutors.interrupted()) {
+								fail = failHandler!=null;
+
+								return depend = this==outer.ongoingRecomputation;
+							}
+
+							//					if(outer.pendingRecompute.transactionActive)
+							//						System.out.println();
+
+							if(!scout) {
+								outer.__clearChangedDependencies();
+								outer.isComputing=false;
+								outer.setComputing.accept(Boolean.FALSE);
+								if(outer.__valid()) 
+									outer.closeBrackets();
+								outer.__value=val;
+								outer.openBrackets();
+
+								outer.ccd();
+								outer.invalidated=false;
+							}
+
 						}
-
-						//					if(outer.pendingRecompute.transactionActive)
-						//						System.out.println();
-
-						if(!scout) {
-							outer.__clearChangedDependencies();
-							outer.isComputing=false;
-							outer.setComputing.accept(Boolean.FALSE);
-							if(outer.__valid()) 
-								outer.closeBrackets();
-							outer.__value=val;
-							outer.openBrackets();
-
-							outer.ccd();
-							outer.invalidated=false;
-						}
-
+					}finally {
+						ListenValue.DEFER.__decrementSuppressors();		
 					}
+
 					if(rec!=null) {
 						//						System.out.println("recorded: "+recorded.stream().map(Dependency::dependencyName).collect(Collectors.toList()));
 						dependOnRecorded(outer, rec);
@@ -1066,23 +1084,28 @@ implements Pile<E>, HasAssociations.Mixin
 						if(successHandler!=null) {
 							StandardExecutors.safe(()->successHandler.accept(null));
 						}
-						synchronized (outer.mutex) {
-							if(this!=outer.ongoingRecomputation)
-								return false;
-							outer.__clearChangedDependencies();
+						try {
+							ListenValue.DEFER.__incrementSuppressors();		
+							synchronized (outer.mutex) {
+								if(this!=outer.ongoingRecomputation)
+									return false;
+								outer.__clearChangedDependencies();
 
-							//					if(outer.pendingRecompute.transactionActive)
-							//						System.out.println();
-							outer.isComputing=false;
-							outer.setComputing.accept(Boolean.FALSE);
-							//assert !outer.valid;
-							if(outer.__valid()) 
-								outer.closeBrackets();
-							if(ET_TRACE && traceEnabledFor(outer))outer.trace("setValidity(false) called from fulfillInvalid, ");
-							outer.setValidity.accept(Boolean.FALSE);
-							outer.invalidated=true;
-							if(DE && outer.dc!=null) outer.dc.explicitlyInvalidate(outer, true);
+								//					if(outer.pendingRecompute.transactionActive)
+								//						System.out.println();
+								outer.isComputing=false;
+								outer.setComputing.accept(Boolean.FALSE);
+								//assert !outer.valid;
+								if(outer.__valid()) 
+									outer.closeBrackets();
+								if(ET_TRACE && traceEnabledFor(outer))outer.trace("setValidity(false) called from fulfillInvalid, ");
+								outer.setValidity.accept(Boolean.FALSE);
+								outer.invalidated=true;
+								if(DE && outer.dc!=null) outer.dc.explicitlyInvalidate(outer, true);
 
+							}
+						}finally {
+							ListenValue.DEFER.__decrementSuppressors();		
 						}
 					}
 					if(rec!=null) {
@@ -1548,7 +1571,7 @@ implements Pile<E>, HasAssociations.Mixin
 		boolean recomputationWasScout;
 		Recomputer<E> recompute;
 		try {
-			ListenValue.DEFER.__incrementSuppressors();
+			//			ListenValue.DEFER.__incrementSuppressors();
 			synchronized (mutex) {
 				if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
 					System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
@@ -1578,7 +1601,7 @@ implements Pile<E>, HasAssociations.Mixin
 				recompute = this.recompute;
 			}
 		}finally {
-			ListenValue.DEFER.__decrementSuppressors();
+			//			ListenValue.DEFER.__decrementSuppressors();
 		}
 		if(wasValid) {
 			fireDeepRevalidate();
@@ -1627,46 +1650,51 @@ implements Pile<E>, HasAssociations.Mixin
 		boolean recomputationWasScheduledOrOngoing;
 		//		boolean recomputationWasScout;
 		boolean wasValid;
-		synchronized (mutex) {
-			if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
-				System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
-			}
-			if(changingDependencies == null || !changingDependencies.contains(d)) {
-				try {
-					throw new IllegalStateException("Dependency was not changing");
-				}catch(IllegalStateException x) {
-					x.printStackTrace();
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized (mutex) {
+				if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
+					System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 				}
-				return;
-			}
-			wasValid = valid;
-			if(valid)
-				moveValueToOldValue();
-
-			invalidated=false;
-
-			recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
-			//			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
-
-			if(informed!=null && wasValid) {
-				assert !Thread.holdsLock(informQueue);
-				// assert !Thread.holdsLock(informRunnerMutex);
-				if(ET_TRACE && traceEnabledFor(this))trace("schedule informing of dependers that I have become invalid");
-				//			StackTraceElement[] cause = Thread.currentThread().getStackTrace();
-				synchronized (informQueue) {
-					informQueue.add(()->{
-						if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers that I have become invalid");
-						if(informed==null)
-							return;
-						//					cause.clone();
-						for(Depender d2: informed) {
-							d2.escalateDependencyChange(this);
-						}
-
-					});
+				if(changingDependencies == null || !changingDependencies.contains(d)) {
+					try {
+						throw new IllegalStateException("Dependency was not changing");
+					}catch(IllegalStateException x) {
+						x.printStackTrace();
+					}
+					return;
 				}
-			}
+				wasValid = valid;
+				if(valid)
+					moveValueToOldValue();
 
+				invalidated=false;
+
+				recomputationWasScheduledOrOngoing = recomputationTransactions>=1;
+				//			recomputationWasScout = nextRecomputationIsScout || (ongoingRecomputation!=null && ongoingRecomputation.isDependencyScout());
+
+				if(informed!=null && wasValid) {
+					assert !Thread.holdsLock(informQueue);
+					// assert !Thread.holdsLock(informRunnerMutex);
+					if(ET_TRACE && traceEnabledFor(this))trace("schedule informing of dependers that I have become invalid");
+					//			StackTraceElement[] cause = Thread.currentThread().getStackTrace();
+					synchronized (informQueue) {
+						informQueue.add(()->{
+							if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers that I have become invalid");
+							if(informed==null)
+								return;
+							//					cause.clone();
+							for(Depender d2: informed) {
+								d2.escalateDependencyChange(this);
+							}
+
+						});
+					}
+				}
+
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
 		}
 		fireDeepRevalidate();
 
@@ -2189,9 +2217,14 @@ implements Pile<E>, HasAssociations.Mixin
 			return get();
 		}
 		checkForTransformEnd(BehaviorDuringTransform.BLOCK);
-		synchronized (mutex) {
-			if(valid && equivalence.test(val, __value))
-				return __value;
+		try {	
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized (mutex) {
+				if(valid && equivalence.test(val, __value))
+					return __value;
+			}
+		}finally{
+			ListenValue.DEFER.__decrementSuppressors();		 
 		}
 		//synchronized (schedulingMutex) 
 		{
@@ -2201,6 +2234,7 @@ implements Pile<E>, HasAssociations.Mixin
 			__beginTransaction();
 		}
 		try {
+			ListenValue.DEFER.__incrementSuppressors();		
 			cancelPendingRecomputation(true);
 			if(recompute!=null && recompute.useDependencyScouting()) {
 				synchronized (mutex) {
@@ -2225,7 +2259,10 @@ implements Pile<E>, HasAssociations.Mixin
 			}
 			__thisNeedsDeepRevalidate(needDeepRevalidate);
 
-			__workInformQueue();
+			//TODO: Is this needed?
+			//__workInformQueue();
+
+
 			//			Dependency[] detach;
 			synchronized (mutex) {
 				closeBrackets();
@@ -2265,9 +2302,11 @@ implements Pile<E>, HasAssociations.Mixin
 			//			}
 
 
-			__workInformQueue();
+			//__workInformQueue();
 
 		} finally {
+			ListenValue.DEFER.__decrementSuppressors();		
+			__workInformQueue();
 			//			if(openTransactions()!=1)
 			//				System.out.println();
 			//synchronized (schedulingMutex) 
@@ -2347,10 +2386,15 @@ implements Pile<E>, HasAssociations.Mixin
 			//			StandardExecutors.unlimited()
 			d.removeDependency(this);	
 		});
-		synchronized (mutex) {
-			moveValueToOldValue();
-			closeBrackets();
-			closeOldBrackets();
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized (mutex) {
+				moveValueToOldValue();
+				closeBrackets();
+				closeOldBrackets();
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
 		}
 		setAutoValidating.accept(isAutoValidating());
 
@@ -2373,10 +2417,16 @@ implements Pile<E>, HasAssociations.Mixin
 			pr.cancel();
 		giveDependers(Depender::deepDestroy);
 		giveDependencies(this::removeDependency);
-		synchronized (mutex) {
-			assert dependOnThis==null || dependOnThis.isEmpty();
-			closeBrackets();
-			closeOldBrackets();
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized (mutex) {
+				assert dependOnThis==null || dependOnThis.isEmpty();
+				closeBrackets();
+				closeOldBrackets();
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
+
 		}
 		__workInformQueue();
 	}
@@ -2405,6 +2455,7 @@ implements Pile<E>, HasAssociations.Mixin
 	@Override
 	protected void moveValueToOldValue() {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		if(oldValid) {
 			if(valid) {
 				if(__value==oldValue){
@@ -2430,6 +2481,7 @@ implements Pile<E>, HasAssociations.Mixin
 	@Override
 	protected void copyValueToOldValue() {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		if(oldValid) {
 			if(valid) {
 				if(__value==oldValue){
@@ -2526,6 +2578,7 @@ implements Pile<E>, HasAssociations.Mixin
 	@Override
 	protected void __restoreValueFromOldValue() {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		__value = oldValue;
 		openBrackets();
 		closeOldBrackets();
@@ -2800,7 +2853,7 @@ implements Pile<E>, HasAssociations.Mixin
 	public void __endTransaction(boolean changedIfOldInvalid) {
 		super.__endTransaction(changedIfOldInvalid);
 		try {
-			ListenValue.DEFER.__incrementSuppressors();
+			//			ListenValue.DEFER.__incrementSuppressors();
 			boolean bv;
 			boolean needDeepRevalidate;
 			synchronized (mutex) {
@@ -2835,7 +2888,7 @@ implements Pile<E>, HasAssociations.Mixin
 			//		if(!needDeepRevalidate)
 			__thisNeedsDeepRevalidate(needDeepRevalidate);
 		}finally {
-			ListenValue.DEFER.__decrementSuppressors();
+			//			ListenValue.DEFER.__decrementSuppressors();
 		}
 	}
 
@@ -2940,6 +2993,7 @@ implements Pile<E>, HasAssociations.Mixin
 	@Override
 	protected void openBrackets() {
 		assert Thread.holdsLock(mutex);
+		assert ListenValue.DEFER.isDeferring();
 		super.openBrackets();
 		//		if(avName == "baseNormalShift_minValue" && __value==null)
 		//			System.out.println();
@@ -3235,21 +3289,26 @@ implements Pile<E>, HasAssociations.Mixin
 	/**
 	 * Sneakily set the value, but only if the {@link #oldValue} is valid and identical
 	 * to the second argument, doing it without triggering any transactions, 
-	 * {@link ValueEvent}s or {@link Depender} recomputaitons.
+	 * {@link ValueEvent}s or {@link Depender} recomputatons.
 	 * @param v
 	 * @param oldMustBe
 	 */
 	public void __conditionalSecretSet(E v, E oldMustBe) {
-		synchronized (mutex) {
-			if(oldMustBe!=oldValue || !oldValid)
-				return;
-			if(__valid()){
-				if(equivalence.test(__value, v))
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized (mutex) {
+				if(oldMustBe!=oldValue || !oldValid)
 					return;
+				if(__valid()){
+					if(equivalence.test(__value, v))
+						return;
+				}
+				closeBrackets();
+				__value=v;
+				openBrackets();
 			}
-			closeBrackets();
-			__value=v;
-			openBrackets();
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
 		}
 		fireValueChange();
 	}

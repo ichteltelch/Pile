@@ -27,6 +27,7 @@ import pile.aspect.bracket.ValueOnlyBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteListenDependency;
+import pile.aspect.listen.ListenValue;
 import pile.aspect.listen.ValueListener;
 import pile.aspect.recompute.DependencyRecorder;
 import pile.aspect.recompute.Recomputation;
@@ -136,69 +137,69 @@ HasInfluencers
 		if(setter==null)
 			setter=new WriteValue<E>() {
 
-				@Override
-				public E set(E value) {
-					return set0(value);
-				}
-				@Override
-				public void accept(E value) {
-					set0(value);
-				}
+			@Override
+			public E set(E value) {
+				return set0(value);
+			}
+			@Override
+			public void accept(E value) {
+				set0(value);
+			}
 
-				@Override
-				public void permaInvalidate() {
-				}
+			@Override
+			public void permaInvalidate() {
+			}
 
-				@Override
-				public void __beginTransaction(boolean b) {
-					Independent.this.__beginTransaction(b);
-				}
+			@Override
+			public void __beginTransaction(boolean b) {
+				Independent.this.__beginTransaction(b);
+			}
 
-				@Override
-				public void __endTransaction(boolean b) {
-					Independent.this.__endTransaction(b);
-				}
+			@Override
+			public void __endTransaction(boolean b) {
+				Independent.this.__endTransaction(b);
+			}
 
-				@Override
-				public void valueMutated() {
-					Independent.this.valueMutated();
-				}
+			@Override
+			public void valueMutated() {
+				Independent.this.valueMutated();
+			}
 
-				@Override
-				public void _setEquivalence(BiPredicate<? super E, ? super E> equivalence) {
-					Independent.super._setEquivalence(equivalence);
-				}
+			@Override
+			public void _setEquivalence(BiPredicate<? super E, ? super E> equivalence) {
+				Independent.super._setEquivalence(equivalence);
+			}
 
-				@Override
-				public BiPredicate<? super E, ? super E> _getEquivalence() {
-					return Independent.this._getEquivalence();
-				}
+			@Override
+			public BiPredicate<? super E, ? super E> _getEquivalence() {
+				return Independent.this._getEquivalence();
+			}
 
-				@Override
-				public E applyCorrection(E v) {
-					return Independent.this.applyCorrection(v);
-				}
+			@Override
+			public E applyCorrection(E v) {
+				return Independent.this.applyCorrection(v);
+			}
 
-				@Override
-				public void revalidate() {
-				}
-				@Override
-				public boolean remembersLastValue() {
-					return Independent.this.remembersLastValue();
-				}
-				@Override
-				public void storeLastValueNow() {
-					Independent.this.storeLastValueNow();
-				}
-				@Override
-				public void resetToLastValue() {
-					Independent.this.resetToLastValue();
-				}
-				@Override
-				public Suppressor suppressRememberLastValue() {
-					return Independent.this.suppressRememberLastValue();
-				}
-			};;
+			@Override
+			public void revalidate() {
+			}
+			@Override
+			public boolean remembersLastValue() {
+				return Independent.this.remembersLastValue();
+			}
+			@Override
+			public void storeLastValueNow() {
+				Independent.this.storeLastValueNow();
+			}
+			@Override
+			public void resetToLastValue() {
+				Independent.this.resetToLastValue();
+			}
+			@Override
+			public Suppressor suppressRememberLastValue() {
+				return Independent.this.suppressRememberLastValue();
+			}
+		};;
 		return setter;
 	}
 
@@ -256,20 +257,32 @@ HasInfluencers
 			log.log(Level.SEVERE, "Exception in applyCorrection", x);
 			return get();
 		}
-		synchronized (mutex) {
-			if(equivalence.test(val, value))
-				return value;
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+
+			synchronized (mutex) {
+				if(equivalence.test(val, value))
+					return value;
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
+
 		}
 		try{
 			__beginTransaction();
 			fireDeepRevalidate();
 
-			synchronized (mutex) {
-				if(value!=val) {
-					closeBrackets();
-					value=val;
-					openBrackets();
+			try{
+				ListenValue.DEFER.__incrementSuppressors();		
+				synchronized (mutex) {
+					if(value!=val) {
+						closeBrackets();
+						value=val;
+						openBrackets();
+					}
 				}
+			}finally {
+				ListenValue.DEFER.__decrementSuppressors();		
 			}
 			setIsNullValue.accept(value==null);
 			return val;
@@ -318,26 +331,36 @@ HasInfluencers
 
 	@Override
 	protected void moveValueToOldValue() {
-		synchronized(mutex) {
-			if(oldValid)
-				return;
-			closeOldBrackets();
-			oldValue=value;
-			openOldBrackets();
-		}		
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized(mutex) {
+				if(oldValid)
+					return;
+				closeOldBrackets();
+				oldValue=value;
+				openOldBrackets();
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
+		}
 	}
 
 	@Override
 	protected void __restoreValueFromOldValue() {
-		synchronized(mutex) {
-			if(!oldValid)
-				return;
-			if(value==oldValue)
-				return;
-			closeBrackets();
-			value=oldValue;
-			openBrackets();
-			closeOldBrackets();
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized(mutex) {
+				if(!oldValid)
+					return;
+				if(value==oldValue)
+					return;
+				closeBrackets();
+				value=oldValue;
+				openBrackets();
+				closeOldBrackets();
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
 		}
 	}
 
@@ -384,7 +407,7 @@ HasInfluencers
 	public void __endTransaction(boolean b) {
 		super.__endTransaction(b);
 	}
-//	@Override public Maybe<E> getWithValidity() {return Maybe.just(get());}
+	//	@Override public Maybe<E> getWithValidity() {return Maybe.just(get());}
 	private WeakHashMap<Object, Object> associations;
 	private ReferenceQueue<Object> associationRq;
 	@Override
@@ -415,7 +438,7 @@ HasInfluencers
 	 */
 	volatile ArrayList<Function<? super E, ? extends E>> correctors;
 	public void _addCorrector(Function<? super E, ? extends E> corrector) {
-		
+
 		Objects.requireNonNull(corrector);
 		if(sealed!=null) {
 			throw new IllegalStateException("Cannot change correctors of a sealed Independent value");
@@ -512,11 +535,16 @@ HasInfluencers
 		destroyed=true;
 		sealed=null;
 		WeakHashMap<Depender, ?> ief;
-		synchronized (mutex) {
-			closeOldBrackets();
-			closeBrackets();
-			ief = isEssentialFor;
-			isEssentialFor = null;
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized (mutex) {
+				closeOldBrackets();
+				closeBrackets();
+				ief = isEssentialFor;
+				isEssentialFor = null;
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
 		}
 		if(ief!=null) {
 			synchronized (ief) {
@@ -539,7 +567,7 @@ HasInfluencers
 	@Override public boolean isLazyValidating() {return false;}
 	@Override public void lazyValidate() {}
 	@Override public void setLazyValidating(boolean newState) {}
-//	@Override public boolean couldBeValid(boolean onlyIfLazyValidating) {return true;}
+	//	@Override public boolean couldBeValid(boolean onlyIfLazyValidating) {return true;}
 	@Override public boolean is(E v) {
 		if(!isValid())
 			return false;
@@ -591,7 +619,7 @@ HasInfluencers
 					localRef.setName((avName==null?"?":avName)+" == null");
 					localRef.keepStrong(this);
 					localRef.seal();
-					
+
 					isNullValue = localRef;
 				}
 			}
@@ -620,18 +648,18 @@ HasInfluencers
 	protected final void __scheduleRecomputation(boolean cancelOngoing) {
 		//Independent values don't recompute
 	}
-//	@Override
-//	protected final boolean canRecomputeWithInvalidDependencies() {
-//		return false;
-//	}
-//	@Override
-//	public Independent<E> validBuffer() {
-//		return this;
-//	}	
-//	@Override
-//	public Independent<E> validBuffer_memo() {
-//		return this;
-//	}
+	//	@Override
+	//	protected final boolean canRecomputeWithInvalidDependencies() {
+	//		return false;
+	//	}
+	//	@Override
+	//	public Independent<E> validBuffer() {
+	//		return this;
+	//	}	
+	//	@Override
+	//	public Independent<E> validBuffer_memo() {
+	//		return this;
+	//	}
 	@Override
 	protected final Recomputation<E> __ongoingRecomputation() {
 		return null;
@@ -644,7 +672,7 @@ HasInfluencers
 		if(owner!=null)
 			out.accept(owner);
 	}
-	
+
 	@Override
 	public boolean destroyIfMarkedDisposable() {
 		if(isMarkedDisposable()) {
@@ -660,8 +688,8 @@ HasInfluencers
 			if(recorder!=null) {
 				Recomputation<?> recomp = recorder.getReceivingRecomputation();
 				if(recomp != null && recomp.isDynamicRecording() && !recomp.isFinished()) {
-                    String msg = "Reactive value created durinc dynamic dependency recording";
-                    log.log(Level.WARNING, msg);
+					String msg = "Reactive value created durinc dynamic dependency recording";
+					log.log(Level.WARNING, msg);
 					throw new IllegalStateException(msg);
 				}
 			}

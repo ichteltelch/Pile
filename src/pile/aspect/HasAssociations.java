@@ -11,6 +11,7 @@ import java.util.WeakHashMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import pile.aspect.listen.ListenValue;
 import pile.interop.exec.StandardExecutors;
 
 /**
@@ -25,13 +26,13 @@ public interface HasAssociations {
 		 * {@link ReferencePolicy}
 		 */
 		static final Object NULL = new Object();
-		
+
 		/**
 		 * The key for which the corresponding value stores the references that were given to
 		 * {@link #keepStrong(Object)} 
 		 */
 		static final AssociationKey<HashSet<Object>> KEEP_STRONG=new SimpleAssociationKey<>();
-		
+
 		/**
 		 * The key for marking as disposable
 		 */
@@ -70,11 +71,11 @@ public interface HasAssociations {
 		 * @return Whether this policy makes use of a reference queue.
 		 */
 		abstract boolean needsReferenceQueue();
-		
+
 		public default <K> Object wrapRemoving(Object o, ReferenceQueue<Object> rq, Collection<? super K> removeFrom, K removeThis) {
 			return rq==null?wrap(o, null, null):wrap(o, rq, ()->removeFrom.remove(removeThis));
 		}
-		
+
 		public default <K> Object wrapRemovingRef(Object o, ReferenceQueue<Object> rq, Collection<? super K> removeFrom, Reference<? extends K> removeThis) {
 			return rq==null?wrap(o, null, null):wrap(o, rq, ()->{
 				K k = removeThis.get();
@@ -85,7 +86,7 @@ public interface HasAssociations {
 		public default <K> Object wrapRemoving(Object o, ReferenceQueue<Object> rq, Map<? super K, ?> removeFrom, K removeThis) {
 			return rq==null?wrap(o, null, null):wrap(o, rq, ()->removeFrom.remove(removeThis));
 		}
-		
+
 		public default <K> Object wrapRemovingRef(Object o, ReferenceQueue<Object> rq, Map<? super K, ?> removeFrom, Reference<? extends K> removeThis) {
 			return rq==null?wrap(o, null, null):wrap(o, rq, ()->{
 				K k = removeThis.get();
@@ -190,7 +191,7 @@ public interface HasAssociations {
 		};
 	}
 
-	
+
 	/**
 	 * Interface for key objects, annotated with the type of the associated value
 	 * @author bb
@@ -306,9 +307,9 @@ public interface HasAssociations {
 	default boolean isMarkedDisposable() {
 		return Boolean.TRUE.equals(getAssociation(__PrivateStuff.DISPOSABLE));
 	}
-	
-	
-	
+
+
+
 	/**
 	 * Lift a given function to a memoized function that remembers previous results by storing them
 	 * in the associations of its argument.
@@ -339,7 +340,7 @@ public interface HasAssociations {
 		}
 		return new MemoizedFunction(rpol, f);
 	}
-	
+
 	/**
 	 * Generic implementation of {@link HasAssociations} that can be implemented
 	 * to provide the functionality in a consistent way.
@@ -347,7 +348,7 @@ public interface HasAssociations {
 	 *
 	 */
 	public static interface Mixin extends HasAssociations{
-		
+
 		/**
 		 * Must not be called from outside {@link Mixin}'s methods.
 		 * @return The Object to be used as a mutex for coordinating access to the map.
@@ -376,7 +377,7 @@ public interface HasAssociations {
 		 * @param queue
 		 */
 		public void __HasAssocitations_Mixin_setQueue(ReferenceQueue<Object> queue);
-		
+
 
 		default public <K> void putAssociation(AssociationKey<? super K> key, K value) {
 			synchronized (__HasAssocitations_Mixin_getMutex()) {
@@ -411,8 +412,13 @@ public interface HasAssociations {
 						__HasAssocitations_Mixin_setQueue(associationRq = new ReferenceQueue<>());
 					else
 						associationRq = null;
-
-					K value = valueMaker.apply(param);
+					K value;
+					try {
+						ListenValue.DEFER.__incrementSuppressors();		
+						value = valueMaker.apply(param);
+					}finally {
+						ListenValue.DEFER.__decrementSuppressors();		
+					}
 					associations.put(key, refHandler.wrapRemovingWeakRef(value, associationRq, associations, key));
 					return value;
 				}
@@ -422,7 +428,13 @@ public interface HasAssociations {
 					K value = (K)refHandler.unwrap(wv);
 					return value;
 				}
-				K value = valueMaker.apply(param);
+				K value;
+				try {
+					ListenValue.DEFER.__incrementSuppressors();		
+					value = valueMaker.apply(param);
+				}finally {
+					ListenValue.DEFER.__decrementSuppressors();		
+				}
 				if((associationRq = __HasAssocitations_Mixin_getQueue())==null && refHandler.needsReferenceQueue()) 
 					__HasAssocitations_Mixin_setQueue(associationRq = new ReferenceQueue<>());
 				associations.put(key, refHandler.wrapRemovingWeakRef(value, associationRq, associations, key));
@@ -442,7 +454,13 @@ public interface HasAssociations {
 					else
 						associationRq = null;
 
-					K value = valueMaker.get();
+					K value;
+					try {
+						ListenValue.DEFER.__incrementSuppressors();		
+						value = valueMaker.get();
+					}finally {
+						ListenValue.DEFER.__decrementSuppressors();		
+					}
 					associations.put(key, refHandler.wrapRemovingWeakRef(value, associationRq, associations, key));
 					return value;
 				}
@@ -452,7 +470,13 @@ public interface HasAssociations {
 					K value = (K)refHandler.unwrap(wv);
 					return value;
 				}
-				K value = valueMaker.get();
+				K value;
+				try {
+					ListenValue.DEFER.__incrementSuppressors();		
+					value = valueMaker.get();
+				}finally {
+					ListenValue.DEFER.__decrementSuppressors();		
+				}
 				if((associationRq = __HasAssocitations_Mixin_getQueue())==null && refHandler.needsReferenceQueue()) 
 					__HasAssocitations_Mixin_setQueue(associationRq = new ReferenceQueue<>());
 				associations.put(key, refHandler.wrapRemovingWeakRef(value, associationRq, associations, key));
@@ -461,12 +485,17 @@ public interface HasAssociations {
 		}
 		@Override
 		default public <K> K getAssociation(AssociationKey<K> key) {
-			synchronized (__HasAssocitations_Mixin_getMutex()) {
-				WeakHashMap<Object, Object> associations = __HasAssocitations_Mixin_getMap();
+			WeakHashMap<Object, Object> associations;
+			ReferenceQueue<Object> associationRq;
+			Object mutex = __HasAssocitations_Mixin_getMutex();
+			synchronized (mutex) {
+				associations = __HasAssocitations_Mixin_getMap();
 				if(associations==null)
 					return null;
-				ReferenceQueue<Object> associationRq = __HasAssocitations_Mixin_getQueue();
-				if(associationRq!=null)
+				associationRq = __HasAssocitations_Mixin_getQueue();
+			}
+			if(associationRq!=null)
+				synchronized (associationRq) {
 					while(true) {
 						Reference<? extends Object> next = associationRq.poll();
 						if(next==null)
@@ -475,6 +504,9 @@ public interface HasAssociations {
 							StandardExecutors.safe((Runnable) next);
 						}
 					}
+				}
+
+			synchronized (mutex) {
 				ReferencePolicy refHandler = key.referenceStrength();
 				Object wv = associations.get(key);
 				@SuppressWarnings("unchecked")

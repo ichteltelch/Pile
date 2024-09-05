@@ -34,7 +34,7 @@ ReadWriteListenValue<T>,
 ListenValue.Managed, 
 AlwaysValid<T>
 {
-	private static final Logger logger = Logger.getLogger("PreferencesProsumer");
+	private static final Logger logger = Logger.getLogger("PreferencesBackedValue");
 	final Preferences node;
 	final String key;
 	final Bijection<T, String> encode;

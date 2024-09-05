@@ -63,6 +63,8 @@ public interface Bijection<From, To> extends Function<From, To>{
 	public static <From, To> Bijection<From, To> define(
 			Function<? super From, ? extends To> to, 
 			Function<? super To, ? extends From> fro){
+		Objects.requireNonNull(to);
+		Objects.requireNonNull(fro);
 		return new Bijection<From, To>() {
 			@Override
 			public To apply(From t) {

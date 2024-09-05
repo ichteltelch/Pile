@@ -9,11 +9,22 @@ import pile.aspect.transform.TransformableValue;
  *
  * @param <E>
  */
-public interface TransformableDependency<E> extends TransformableValue<E>, Dependency {
+public interface TransformableDependency<E> 
+extends TransformableValue<E>, Dependency, ReadWriteDependency<E> {
 	/**
 	 * Give this object a name for debugging purposes.
 	 * @param s
 	 * @return {@code this}. Subclasses and -interfaces should adapt the return type to be themselves 
 	 */
 	TransformableDependency<E> setName(String s);
+	
+	@Override
+	default TransformableDependency<E> asDependency() {
+		return this;
+	}
+	@Override
+	default TransformableDependency<E> setNull() {
+		ReadWriteDependency.super.setNull();
+		return this;
+	}
 }

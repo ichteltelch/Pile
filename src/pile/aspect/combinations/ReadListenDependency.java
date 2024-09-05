@@ -59,5 +59,10 @@ public interface ReadListenDependency<E> extends ReadListenValue<E>, ReadDepende
 	 * @return {@code this}
 	 */
 	public ReadListenDependency<E> setName(String s);
+	
+	@Override
+	default ReadListenDependency<E> asDependency() {
+		return this;
+	}
 
 }

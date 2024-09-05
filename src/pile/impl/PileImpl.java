@@ -3205,7 +3205,7 @@ implements Pile<E>, HasAssociations.Mixin
 	}
 
 	@Override
-	public Dependency asDependency() {
+	public PileImpl<E> asDependency() {
 		return this;
 	}
 

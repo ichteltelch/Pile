@@ -40,4 +40,8 @@ ReadWriteDependency<E>{
 	public default SealPile<E> fallback(E v){
 		return Piles.fallback(this, v);
 	}
+	@Override
+	default ReadWriteListenDependency<E> asDependency() {
+		return this;
+	}
 }

@@ -217,6 +217,9 @@ public interface ReadListenValue<E> extends ReadValue<E>, ListenValue{
 			}
 		});
 	}
+	public default ReadListenDependency<E> asDependency() {
+		return validBuffer_memo();
+	}
 
 
 

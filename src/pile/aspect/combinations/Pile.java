@@ -172,5 +172,11 @@ AutoValidationSuppressible.Single
 		}
 	}
 	public boolean isSealed();
+	
+	
+	@Override
+	default Pile<E> asDependency() {
+		return this;
+	}
 }
 

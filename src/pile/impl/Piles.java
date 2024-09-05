@@ -2533,6 +2533,17 @@ public class Piles {
 	public static SealString derefString(ReadDependency<? extends ReadDependency<? extends String>> derefThis){
 		return makeDeref(derefThis, new SealString());
 	}
+	
+	/**
+	 * Make a {@link Sealable#seal() seal}ed value that takes on the value 
+	 * of the value held by another {@link ReadListenDependency value}
+	 * @param <E>
+	 * @param derefThis
+	 * @return
+	 */
+	public static <T> SealPile<T> deref(ReadDependency<? extends ReadDependency<? extends T>> derefThis){
+		return makeDeref(derefThis, new SealPile<>());
+	}
 	/**
 	 * Configure an un{@link Sealable#seal() seal}ed {@link SealPile} to take on the value 
 	 * of the value held by another {@link ReadListenDependency value}

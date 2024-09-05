@@ -63,5 +63,13 @@ public interface ReadWriteListenValue<E> extends ReadListenValue<E>, ReadWriteVa
 	/** @see ISealPileBuilder#setupWritbaleRateLimited(ReadWriteListenValue, long, long) */
 	public default SealPile<E> writableRateLimited(long coldStartTime, long coolDownTime) {return writableRateLimitedBuilder(coldStartTime, coolDownTime).build();}
 	public default SealPileBuilder<? extends SealPile<E>, E> writableRateLimitedBuilder(long coldStartTime, long coolDownTime) {return Piles.<E>sb().setupWritableRateLimited(this, coldStartTime, coolDownTime);}
-
+	
+	/**
+	 * Obtain something like this value that can be depended on.
+	 * If the value implements Dependency, it should return itself.
+	 * Otherwise, a memoized (possibly writable) validBuffer will be returned.
+	 */
+	public default ReadWriteListenDependency<E> asDependency() {
+		return validBuffer_memo();
+	}
 }

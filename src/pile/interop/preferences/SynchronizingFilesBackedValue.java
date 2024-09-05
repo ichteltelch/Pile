@@ -119,12 +119,11 @@ AlwaysValid<T>
 		};
 	}
 
-	ReadListenDependency<? extends List<Path>> file;
+	ReadListenDependency<? extends List<Path>> files;
 	FileCodec<T> codec;
-	/**
-	 * Will be set to <code>null</code> once the value is initialized
-	 */
-	private Supplier<? extends T> defaultValue;
+
+	private final Supplier<? extends T> defaultValue;
+	boolean initialized;
 	private T currentValue;
 	private BiPredicate<? super T, ? super T> equivalence = ReadWriteDependency.DEFAULT_BIJECT_EQUIVALENCE;
 	long timestamp;
@@ -151,7 +150,7 @@ AlwaysValid<T>
 					FileCodec<T> codec, 
 					Supplier<? extends T> defaultValue) {
 		this.codec = codec;
-		this.file = file.<List<Path>>map(SynchronizingFilesBackedValue::canonicalize);
+		this.files = file.<List<Path>>map(SynchronizingFilesBackedValue::canonicalize);
 		this.defaultValue = defaultValue;
 		fileListenerWeakHandle = file.addWeakValueListener(fileListener);
 		read();
@@ -197,8 +196,10 @@ AlwaysValid<T>
 	public void accept(T t) {
 		write(t, false);
 	}
-	public void reset() {
-		List<Path> paths = file.get();
+	public synchronized void reset() {
+		List<Path> paths = files.get();
+		initialized = false;
+		timestamp = -10000;
 		for(Path path : paths) {
 			try {
 				Files.delete(path);
@@ -229,8 +230,8 @@ AlwaysValid<T>
 			if(!force && defaultValue==null && equivalence.test(value, currentValue))
 				return false;
 			
-			List<Path> fs = file.get();
-			allExist:if(false && onlyIfNotExists) {
+			List<Path> fs = files.get();
+			allExist:if(onlyIfNotExists) {
 				for(Path p: fs) {
 					if(!Files.exists(p))
 						break allExist;
@@ -253,8 +254,8 @@ AlwaysValid<T>
 
 			timestamp=time.toMillis();
 			currentValue=value;
-			defaultValue = null;
-
+			initialized = true;
+			
 
 			int code;
 			try {
@@ -372,18 +373,26 @@ AlwaysValid<T>
 	}
 
 	public Future<?> autoPoll(ScheduledExecutorService scheduler, long period) {
-		return autoPoll(this, scheduler, period);
+		return autoPoll(this::pollOnce, Functional.not(this::isDestroyed), scheduler, period);
 	}
 
-	public Future<?> autoPoll(SynchronizingFilesBackedValue<?> self, ScheduledExecutorService scheduler, long periodMillis) {
+	public static Future<?> autoPoll(Runnable poll, BooleanSupplier whileTrue, ScheduledExecutorService scheduler, long periodMillis) {
 		EarlyMutRef<Future<?>> job = new EarlyMutRef<>();
-		WeakCleanupWithRunnable<SynchronizingFilesBackedValue<?>> selfRef = new WeakCleanupWithRunnable<>(self, ()->job.get().cancel(false));
+		WeakCleanupWithRunnable<BooleanSupplier> condRef = whileTrue==null?null:new WeakCleanupWithRunnable<>(whileTrue, ()->job.get().cancel(false));
+		WeakCleanupWithRunnable<Runnable> pollfRef = new WeakCleanupWithRunnable<>(poll, ()->job.get().cancel(false));
 		job.set(scheduler.scheduleAtFixedRate(()->{
-			SynchronizingFilesBackedValue<?> deref = selfRef.get();
-			if(deref==null || deref.isDestroyed())
+			if(condRef!=null) {
+				BooleanSupplier deref = condRef.get();
+				if(deref==null || !deref.getAsBoolean()) {
+					job.get().cancel(false);
+					return;
+				}
+			}
+			Runnable deref = pollfRef.get();
+			if(pollfRef==null)
 				job.get().cancel(false);
 			else
-				deref.pollOnce();
+				deref.run();
 		}, (int) (Math.random()*periodMillis), periodMillis, TimeUnit.MILLISECONDS));
 		return job.get();
 	}
@@ -397,7 +406,7 @@ AlwaysValid<T>
 		retry:while(true) {
 			initializeInstead:{
 				read:synchronized(this) {
-					List<Path> fs = file.get();
+					List<Path> fs = files.get();
 					nf = newest(fs, f->Files.exists(f) && f.toFile().canRead());	
 
 					if(nf==null) {
@@ -424,7 +433,7 @@ AlwaysValid<T>
 
 						if(defaultValue==null && equivalence.test(oldValue, currentValue))
 							return false;
-						defaultValue = null;
+						initialized = true;
 						FileTime time = Files.getLastModifiedTime(nf);
 						timestamp = time.toMillis();
 						logger.log(Level.INFO, dependencyName()+" read new value from backing file "+nf+": "+currentValue+" @ "+time);
@@ -440,9 +449,9 @@ AlwaysValid<T>
 					break initializeInstead;
 				}
 				synchronized (this) {					
-					if(defaultValue!=null) {
+					if(!initialized) {
 						currentValue = defaultValue.get();
-						defaultValue = null;
+						initialized = true;
 						timestamp = 0;
 					}
 				}
@@ -470,7 +479,7 @@ AlwaysValid<T>
 	}
 	@Override
 	public String dependencyName() {
-		return name==null?"<"+file.toString()+">":name;
+		return name==null?"<"+files.toString()+">":name;
 	}
 	@Override
 	public void await(WaitService ws, BooleanSupplier c) throws InterruptedException {

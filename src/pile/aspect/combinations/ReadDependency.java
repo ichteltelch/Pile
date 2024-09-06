@@ -86,7 +86,7 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 	 * @return
 	 */
 	public default <F> 
-	SealPile<? extends F> map(Function<? super E, ? extends F> mapFunction) {
+	SealPile<F> map(Function<? super E, ? extends F> mapFunction) {
 		return _mapSetup(new SealPile<>(), mapFunction);
 	}
 	/**

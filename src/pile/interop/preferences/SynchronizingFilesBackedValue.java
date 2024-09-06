@@ -228,7 +228,7 @@ AlwaysValid<T>
 
 			final FileTime time = _time;
 
-			if(!force && defaultValue==null && equivalence.test(value, currentValue))
+			if(!force && initialized && equivalence.test(value, currentValue))
 				return false;
 			
 			List<Path> fs = files.get();
@@ -308,7 +308,7 @@ AlwaysValid<T>
 			}
 			if(code!=2) {
 				notifyAll();
-				return code==1;
+				return code==1 && initialized && equivalence.test(value, currentValue);
 			}
 		}
 		read();
@@ -441,7 +441,7 @@ AlwaysValid<T>
 
 						currentValue = codec.decode(nf);
 
-						if(defaultValue==null && equivalence.test(oldValue, currentValue))
+						if(initialized && equivalence.test(oldValue, currentValue))
 							return false;
 						initialized = true;
 						FileTime time = Files.getLastModifiedTime(nf);

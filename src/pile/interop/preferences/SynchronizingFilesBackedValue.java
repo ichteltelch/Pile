@@ -18,6 +18,7 @@ import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.WeakHashMap;
@@ -66,7 +67,7 @@ AlwaysValid<T>
 {
 	private static final Logger logger = Logger.getLogger("FileBackedValue");
 
-	static interface FileCodec<T> {
+	public static interface FileCodec<T> {
 		public void encode(T value, Path path) throws IOException;
 		public T decode(Path path) throws IOException;
 	}
@@ -260,7 +261,7 @@ AlwaysValid<T>
 			int code;
 			try {
 				code = lockingAll(fs.iterator(), spare,  false, ()->{
-					Path f = newest(fs, null);
+					Path f = newest(fs, consider);
 
 					if(f!=null) {
 						try {
@@ -287,12 +288,16 @@ AlwaysValid<T>
 						}
 						try {
 							codec.encode(currentValue, p);
+							if(blacklist!=null)
+								blacklist.remove(p);
 							logger.log(Level.INFO, dependencyName()+" wrote value to backing file "+p+": "+currentValue+ " @ time "+time);
 							//							maxTime = Math.max(maxTime, Files.getLastModifiedTime(p).toMillis());
 							size = Files.size(p);
 							Files.setLastModifiedTime(p, time);
 						} catch (IOException e) {
-							logger.log(Level.WARNING, "Error writing to backing file "+f, e);
+							logger.log(Level.WARNING, "I/O Error writing to backing file "+f, e);
+						} catch (RuntimeException e) {
+							logger.log(Level.WARNING, "Runtime Error writing to backing file "+f, e);
 						}
 					}
 					return 1;
@@ -397,17 +402,22 @@ AlwaysValid<T>
 		return job.get();
 	}
 
+	HashSet<Path> blacklist = null;
+	Predicate<? super Path> consider = f->Files.exists(f) && f.toFile().canRead();
 
 	private boolean _read() {
 		if(isDestroyed())
 			throw new IllegalStateException("Value is destroyed");
 		Path nf;
 		FileTime nfTime=null;
+
 		retry:while(true) {
+
 			initializeInstead:{
 				read:synchronized(this) {
 					List<Path> fs = files.get();
-					nf = newest(fs, f->Files.exists(f) && f.toFile().canRead());	
+					
+					nf = newest(fs, consider);	
 
 					if(nf==null) {
 						break read;
@@ -423,7 +433,7 @@ AlwaysValid<T>
 					ll.lock();
 					try(FileChannel c = FileChannel.open(nf, StandardOpenOption.READ, StandardOpenOption.WRITE);
 							FileLock l = c.lock(0, Long.MAX_VALUE, false)) {
-						Path nf2 = newest(fs, f->Files.exists(f) && f.toFile().canRead());	
+						Path nf2 = newest(fs, consider);	
 						if(nf!=nf2)
 							continue retry;
 						
@@ -438,15 +448,25 @@ AlwaysValid<T>
 						timestamp = time.toMillis();
 						logger.log(Level.INFO, dependencyName()+" read new value from backing file "+nf+": "+currentValue+" @ "+time);
 						size = Files.size(nf);
+						notifyAll();
 
+						break initializeInstead;
 					} catch (IOException e) {
-						logger.log(Level.WARNING, "Error reading backing file "+nf, e);
+						logger.log(Level.WARNING, "I/O Error reading backing file "+nf, e);
+					} catch (RuntimeException e) {
+						logger.log(Level.WARNING, "Runtime Error reading backing file "+nf, e);
 					}finally {
 						ll.unlock();
 					}
-					notifyAll();
 
-					break initializeInstead;
+					if(blacklist==null) {
+						blacklist = new HashSet<>();
+						final HashSet<Path> fblacklist = blacklist;
+						consider = f->Files.exists(f) && f.toFile().canRead() && (fblacklist==null ||!fblacklist.contains(f));
+					}
+					blacklist.add(nf);
+					continue retry;
+					
 				}
 				synchronized (this) {					
 					if(!initialized) {

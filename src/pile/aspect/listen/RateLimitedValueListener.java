@@ -60,7 +60,7 @@ public abstract class RateLimitedValueListener implements ValueListener{
 		 * @see #allSources()
 		 * @return
 		 */
-		public HashSet<Object> getSources() {
+		public HashSet<?> getSources() {
 			return sources;
 		}
 		/**

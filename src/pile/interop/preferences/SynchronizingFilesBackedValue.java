@@ -6,7 +6,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.ref.WeakReference;
 import java.nio.channels.FileChannel;
@@ -14,13 +16,15 @@ import java.nio.channels.FileLock;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileTime;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
@@ -52,6 +56,8 @@ import pile.interop.wait.WaitService;
 import pile.specialized_bool.combinations.ReadListenDependencyBool;
 import pile.utils.Bijection;
 import pile.utils.Functional;
+import pile.utils.NonClosingInputStream;
+import pile.utils.NonClosingOutputStream;
 import pile.utils.WeakCleanupWithRunnable;
 
 /**
@@ -68,18 +74,17 @@ AlwaysValid<T>
 	private static final Logger logger = Logger.getLogger("FileBackedValue");
 
 	public static interface FileCodec<T> {
-		public void encode(T value, Path path) throws IOException;
-		public T decode(Path path) throws IOException;
+		public void encode(T value, Path path, OutputStream useThis) throws IOException;
+		public T decode(Path path, InputStream useThis) throws IOException;
 	}
 	public static FileCodec<String> STRING_CODEC = new FileCodec<String>() {
 
 		@Override
-		public void encode(String value, Path path) throws FileNotFoundException, IOException {
+		public void encode(String value, Path path, OutputStream useThis) throws FileNotFoundException, IOException {
 			if(value==null)
 				return;
 			try(
-					FileOutputStream fos = new FileOutputStream(path.toFile());
-					OutputStreamWriter osw = new OutputStreamWriter(fos, StandardCharsets.UTF_8);
+					OutputStreamWriter osw = new OutputStreamWriter(useThis, StandardCharsets.UTF_8);
 					BufferedWriter bw = new BufferedWriter(osw);
 					) 
 			{
@@ -88,10 +93,9 @@ AlwaysValid<T>
 		}
 
 		@Override
-		public String decode(Path path) throws FileNotFoundException, IOException {
+		public String decode(Path path, InputStream useThis) throws FileNotFoundException, IOException {
 			try(
-					FileInputStream fis = new FileInputStream(path.toFile());
-					InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+					InputStreamReader isr = new InputStreamReader(useThis, StandardCharsets.UTF_8);
 					BufferedReader br = new BufferedReader(isr);
 					){
 				StringBuilder result = new StringBuilder();
@@ -109,13 +113,13 @@ AlwaysValid<T>
 	public static <T> FileCodec<T> viaString(Bijection<T, String> encode){
 		return new FileCodec<T>() {
 			@Override
-			public void encode(T value, Path path) throws IOException {
-				STRING_CODEC.encode(encode.apply(value), path);
+			public void encode(T value, Path path, OutputStream useThis) throws IOException {
+				STRING_CODEC.encode(encode.apply(value), path, useThis);
 			}
 
 			@Override
-			public T decode(Path path) throws IOException {
-				return encode.applyInverse(STRING_CODEC.decode(path));
+			public T decode(Path path, InputStream useThis) throws IOException {
+				return encode.applyInverse(STRING_CODEC.decode(path, useThis));
 			}
 		};
 	}
@@ -139,6 +143,7 @@ AlwaysValid<T>
 	public Independent<T> asDependency(){
 		return writableValidBuffer_memo();
 	}
+	String tmpFileExtension = ".tmp";
 	ValueListener fileListener = e->{
 		timestamp = -100000;
 		size=-2;
@@ -151,7 +156,7 @@ AlwaysValid<T>
 					FileCodec<T> codec, 
 					Supplier<? extends T> defaultValue) {
 		this.codec = codec;
-		this.files = file.<List<Path>>map(SynchronizingFilesBackedValue::canonicalize);
+		this.files = file.<List<Path>>map(SynchronizingFilesBackedValue::canonicalize, b->b.corrector(this::restoreFromTmpFiles));
 		this.defaultValue = defaultValue;
 		fileListenerWeakHandle = file.addWeakValueListener(fileListener);
 		read();
@@ -230,7 +235,7 @@ AlwaysValid<T>
 
 			if(!force && initialized && equivalence.test(value, currentValue))
 				return false;
-			
+
 			List<Path> fs = files.get();
 			allExist:if(onlyIfNotExists) {
 				for(Path p: fs) {
@@ -256,11 +261,12 @@ AlwaysValid<T>
 			timestamp=time.toMillis();
 			currentValue=value;
 			initialized = true;
-			
+
 
 			int code;
 			try {
-				code = lockingAll(fs.iterator(), spare,  false, ()->{
+				HashMap<Path, OutputStream> oss=new HashMap<Path, OutputStream>();
+				code = lockingAll(fs.iterator(), spare, oss, tmpFileExtension,  ()->{
 					Path f = newest(fs, consider);
 
 					if(f!=null) {
@@ -287,7 +293,7 @@ AlwaysValid<T>
 							}
 						}
 						try {
-							codec.encode(currentValue, p);
+							codec.encode(currentValue, p, oss.get(p));
 							if(blacklist!=null)
 								blacklist.remove(p);
 							logger.log(Level.INFO, dependencyName()+" wrote value to backing file "+p+": "+currentValue+ " @ time "+time);
@@ -346,34 +352,69 @@ AlwaysValid<T>
 		return newest;
 	}
 
-	private static <T> T lockingAll(Iterator<Path> iterator, Path spare, boolean shared, Callable<T> object) throws Exception {
+	private static <T> T lockingAll(Iterator<Path> iterator, Path spare, Map<Path, OutputStream> oss, String tmpFileExtension, Callable<T> action) throws Exception {
 		if(iterator.hasNext()) {
 			Path next = iterator.next();
 			if(next.equals(spare) || !Files.exists(next)) {
-				return lockingAll(iterator, spare, shared, object);
+				return lockingAll(iterator, spare, oss, tmpFileExtension, action);
 			}
 			boolean succesfullyLocked=false;
 			Lock ll = canonicalPathLock(next);
 			ll.lock();
-			try(
-					FileChannel c = FileChannel.open(next, shared? StandardOpenOption.READ: StandardOpenOption.WRITE);
-					FileLock l = c.lock(0, Long.MAX_VALUE, shared)
-					){
-				succesfullyLocked = true;
-				return lockingAll(iterator, spare, shared, object);
-			}catch (IOException e) {
-				if(!succesfullyLocked) {
-					logger.log(Level.WARNING, "Error locking backing file "+next, e);
-					return lockingAll(iterator, spare, shared, object);
-				}else {
-					throw e;
+			try {
+
+				Path tmp = null;
+				boolean needsRestore = false;
+				try {
+					if(tmpFileExtension!=null) {
+						Path parent = next.getParent();
+						Path name = next.getFileName();
+						String nameTmp = name+tmpFileExtension;
+						tmp = parent.resolve(nameTmp);
+						Path tmptmp = parent.resolve(nameTmp+tmpFileExtension);
+						Files.copy(next, tmptmp, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+						Files.move(tmptmp, tmp, StandardCopyOption.REPLACE_EXISTING);
+						needsRestore = true;
+					}
+					try(
+							//note: the following truncates the file before opening it for writing,
+							//if the file is not written after all, we need to restore it later
+							FileOutputStream fos = new FileOutputStream(next.toFile());
+							FileChannel c = fos.getChannel();
+							FileLock l = c.lock(0, Long.MAX_VALUE, false);
+							NonClosingOutputStream ncos = new NonClosingOutputStream(fos);
+							){
+						succesfullyLocked = true;
+						oss.put(next, ncos);
+						T ret = lockingAll(iterator, spare, oss, tmpFileExtension, action);
+						needsRestore = ncos.getCloseAttempts()==0;
+						return ret;
+					}catch (IOException e) {
+						if(!succesfullyLocked) {
+							logger.log(Level.WARNING, "Error locking backing file "+next, e);
+							return lockingAll(iterator, spare, oss, tmpFileExtension, action);
+						}else {
+							throw e;
+						}
+					}
+				}finally {
+					try {
+						if(needsRestore) {
+							Files.copy(tmp, next, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+						}
+					}finally {
+						if(tmp!=null) {
+							Files.delete(tmp);
+						}
+					}
 				}
+
 			}finally {
 				ll.unlock();
 			}
 
 		}else {
-			return object.call();
+			return action.call();
 		}
 	}
 
@@ -405,6 +446,31 @@ AlwaysValid<T>
 	HashSet<Path> blacklist = null;
 	Predicate<? super Path> consider = f->Files.exists(f) && f.toFile().canRead();
 
+	List<Path> restoreFromTmpFiles(List<Path> list){
+		if(tmpFileExtension!=null) {
+			for(Path nf: list) {
+				Lock ll = canonicalPathLock(nf);
+				ll.lock();
+				try {
+					try {
+						Path tmp = nf.getParent().resolve(nf.getFileName()+tmpFileExtension);
+						if(Files.exists(tmp)) {
+							//The tmp file had been completely copied, otherwise it would be the tmptmp file
+							Files.copy(tmp, nf, StandardCopyOption.COPY_ATTRIBUTES, StandardCopyOption.REPLACE_EXISTING);
+							Files.delete(tmp);
+						}
+
+					} catch (IOException e) {
+						logger.log(Level.WARNING, "Error restoring uncorrupted file "+nf, e);
+					}
+				}finally {
+					ll.unlock();
+				}
+			}
+		}
+		return list;
+	}
+
 	private boolean _read() {
 		if(isDestroyed())
 			throw new IllegalStateException("Value is destroyed");
@@ -416,45 +482,53 @@ AlwaysValid<T>
 			initializeInstead:{
 				read:synchronized(this) {
 					List<Path> fs = files.get();
-					
+
 					nf = newest(fs, consider);	
 
 					if(nf==null) {
 						break read;
 					}		
 
-					try {
-						if(timestamp >= (nfTime=Files.getLastModifiedTime(nf)).toMillis() && size == Files.size(nf))
-							return false;
-					} catch (IOException e) {
-						logger.log(Level.WARNING, "Error reading metadata of backing file "+nf, e);
-					}
+
 					Lock ll = canonicalPathLock(nf);
 					ll.lock();
-					try(FileChannel c = FileChannel.open(nf, StandardOpenOption.READ, StandardOpenOption.WRITE);
-							FileLock l = c.lock(0, Long.MAX_VALUE, false)) {
-						Path nf2 = newest(fs, consider);	
-						if(nf!=nf2)
-							continue retry;
-						
-						T oldValue = currentValue;
+					try {
 
-						currentValue = codec.decode(nf);
 
-						if(initialized && equivalence.test(oldValue, currentValue))
-							return false;
-						initialized = true;
-						FileTime time = Files.getLastModifiedTime(nf);
-						timestamp = time.toMillis();
-						logger.log(Level.INFO, dependencyName()+" read new value from backing file "+nf+": "+currentValue+" @ "+time);
-						size = Files.size(nf);
-						notifyAll();
+						try {
+							if(timestamp >= (nfTime=Files.getLastModifiedTime(nf)).toMillis() && size == Files.size(nf))
+								return false;
+						} catch (IOException e) {
+							logger.log(Level.WARNING, "Error reading metadata of backing file "+nf, e);
+						}
+						try(	FileInputStream fis = new FileInputStream(nf.toFile());
+								FileChannel c = fis.getChannel();
+								FileLock l = c.lock(0, Long.MAX_VALUE, true);
+								InputStream is = new NonClosingInputStream(fis);
+								) {
+							Path nf2 = newest(fs, consider);	
+							if(nf!=nf2)
+								continue retry;
 
-						break initializeInstead;
-					} catch (IOException e) {
-						logger.log(Level.WARNING, "I/O Error reading backing file "+nf, e);
-					} catch (RuntimeException e) {
-						logger.log(Level.WARNING, "Runtime Error reading backing file "+nf, e);
+							T oldValue = currentValue;
+
+							currentValue = codec.decode(nf, is);
+
+							if(initialized && equivalence.test(oldValue, currentValue))
+								return false;
+							initialized = true;
+							FileTime time = Files.getLastModifiedTime(nf);
+							timestamp = time.toMillis();
+							logger.log(Level.INFO, dependencyName()+" read new value from backing file "+nf+": "+currentValue+" @ "+time);
+							size = Files.size(nf);
+							notifyAll();
+
+							break initializeInstead;
+						} catch (IOException e) {
+							logger.log(Level.WARNING, "I/O Error reading backing file "+nf, e);
+						} catch (RuntimeException e) {
+							logger.log(Level.WARNING, "Runtime Error reading backing file "+nf, e);
+						}
 					}finally {
 						ll.unlock();
 					}
@@ -466,7 +540,7 @@ AlwaysValid<T>
 					}
 					blacklist.add(nf);
 					continue retry;
-					
+
 				}
 				synchronized (this) {					
 					if(!initialized) {

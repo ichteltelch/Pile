@@ -64,7 +64,7 @@ public class MultiSourceIntegrator<T> {
 	BiFunction<? super T, ? super T, ? extends T> integrate;
 
 	public final ReadListenDependencyBool monotonous;
-
+	
 	public MultiSourceIntegrator(ReadWriteListenDependency<T> target, Supplier<? extends T> neutral, BiFunction<? super T,? super T, ? extends T> integrate) {
 		this.target = target;
 		this.neutral = neutral;
@@ -94,6 +94,7 @@ public class MultiSourceIntegrator<T> {
 	void sourceChanged(MultiEvent e) {
 		synchronized (this) {
 
+			ListenValue.DEFER.__incrementSuppressors();
 			try {
 				T old, accu;
 				boolean oldValid, accuValid;
@@ -145,10 +146,21 @@ public class MultiSourceIntegrator<T> {
 				}
 				if(!accuValid)
 					accu = neutral.get();
-				target.set(accu);
+				T actuallySet = target.set(accu);
+				
+				//If the set of sources has changed,
+				//we call the listener in any case to distribute the current
+				//value any new sources.
+				if(e.allSources())
+					//If the value has not changed, target will not have fired an event, so we need to do it now
+					//because new sources may be out of sync
+					if(!oldValid || old==actuallySet)
+						targetChanged(null);
 			} catch (InterruptedException e1) {
 				Thread.currentThread().interrupt();
 				return;
+			}finally {
+				ListenValue.DEFER.__decrementSuppressors();
 			}
 		}	
 	}

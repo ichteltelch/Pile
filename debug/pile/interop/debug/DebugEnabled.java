@@ -26,7 +26,7 @@ import pile.utils.StackTraceWrapper;
  */
 public class DebugEnabled {
 
-	public static final boolean DISABLE_ALL_DEBUGGING = true;
+	public static final boolean DISABLE_ALL_DEBUGGING = !true;
 
 	/**
 	 * Whether debugging is enabled at all.
@@ -46,7 +46,8 @@ public class DebugEnabled {
 	public static final boolean TRANSACTION_TRACES = !DISABLE_ALL_DEBUGGING &&false;
 
 	/**
-	 * Causes all {@link ValueBracket}s created by the library to be wrapped into
+	 * Causes all {@link ValueBracket}s created by static methods if 
+	 * the library to be wrapped into
 	 * a {@link DeadlockDetectingBracket}.
 	 */
 	public static final boolean DETECT_STUCK_BRACKETS = !DISABLE_ALL_DEBUGGING && true;

@@ -24,6 +24,7 @@ import pile.impl.Constant;
 import pile.impl.Independent;
 import pile.impl.Piles;
 import pile.impl.SealPile;
+import pile.specialized_bool.IndependentBool;
 import pile.specialized_bool.combinations.ReadListenDependencyBool;
 
 public class MultiSourceIntegrator<T> {
@@ -44,6 +45,15 @@ public class MultiSourceIntegrator<T> {
 	.name("sourcesIndir").parent(this)
 	.build();
 
+	IndependentBool monotonous__ = Piles
+			.independent(false)
+			.name("monotonous__")
+			.parent(this)
+			.build();
+	public final ReadListenDependencyBool monotonous = monotonous__.readOnly();
+
+	public final ReadWriteListenDependency<T> target;
+
 	public final ReadListenDependency<? extends Set<? extends ReadWriteListenValue<T>>>
 	sources = new SealPileBuilder<>(new SealPile<Set<? extends ReadWriteListenValue<T>>>())
 	.name("sources").parent(this)
@@ -51,26 +61,30 @@ public class MultiSourceIntegrator<T> {
 	.bracket(ValueBracket.<Set<? extends ReadListenValue<T>>>make(false, set->{
 		for(ListenValue l: set)
 			l.addWeakValueListener(sourceListener);
-		sourceListener.valueChanged(null);
+		Object target = target();
+		if(target!=null) {
+			monotonous__.set(set.contains(target));
+			sourceListener.runImmediately();
+		}
 	}, set->{
 		for(ListenValue l: set)
 			l.removeWeakValueListener(sourceListener);
 	}).defer(ListenValue.DEFER).nopOnNull())
-	.build().validBuffer();
+	.build();
 
 
-	public final ReadWriteListenDependency<T> target;
 	Supplier<? extends T> neutral;
 	BiFunction<? super T, ? super T, ? extends T> integrate;
 
-	public final ReadListenDependencyBool monotonous;
-	
+
 	public MultiSourceIntegrator(ReadWriteListenDependency<T> target, Supplier<? extends T> neutral, BiFunction<? super T,? super T, ? extends T> integrate) {
 		this.target = target;
 		this.neutral = neutral;
 		this.integrate = integrate;
-		monotonous = sources.mapToBool(s->s.contains(target)).validBuffer();
 		target.addWeakValueListener(targetListener);
+	}
+	private Object target() {
+		return target;
 	}
 	private void targetChanged(ValueEvent e) {
 		if(target.isValid()) {
@@ -92,10 +106,10 @@ public class MultiSourceIntegrator<T> {
 
 	@SuppressWarnings("unchecked")
 	void sourceChanged(MultiEvent e) {
-		synchronized (this) {
+		try {
 
 			ListenValue.DEFER.__incrementSuppressors();
-			try {
+			synchronized (this) {
 				T old, accu;
 				boolean oldValid, accuValid;
 				Set<? extends ReadValue<T>> sources;
@@ -104,6 +118,7 @@ public class MultiSourceIntegrator<T> {
 					if(e.allSources()) {
 						sources = this.sources.get();
 						if(sources==null || sources.isEmpty()) {
+
 							return;
 						}
 					}
@@ -147,7 +162,7 @@ public class MultiSourceIntegrator<T> {
 				if(!accuValid)
 					accu = neutral.get();
 				T actuallySet = target.set(accu);
-				
+
 				//If the set of sources has changed,
 				//we call the listener in any case to distribute the current
 				//value any new sources.
@@ -156,13 +171,14 @@ public class MultiSourceIntegrator<T> {
 					//because new sources may be out of sync
 					if(!oldValid || old==actuallySet)
 						targetChanged(null);
-			} catch (InterruptedException e1) {
-				Thread.currentThread().interrupt();
-				return;
-			}finally {
-				ListenValue.DEFER.__decrementSuppressors();
-			}
-		}	
+			
+			}	
+		} catch (InterruptedException e1) {
+			Thread.currentThread().interrupt();
+			return;
+	    }finally {
+			ListenValue.DEFER.__decrementSuppressors();
+		}
 	}
 
 

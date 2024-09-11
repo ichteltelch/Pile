@@ -96,6 +96,13 @@ public interface ReadDependencyBool extends ReadValueBool, Dependency, ReadDepen
 			ReadDependency<? extends E> ifFalse){
 		return _choose(ifTrue, ifFalse, Piles.constNull(), new SealPile<>());
 	}
+	public default <E> SealPile<E> chooseConstV(E itTrue, ReadDependency<? extends E> ifFalse){
+		return choose(Piles.constant(itTrue), ifFalse);
+	}
+	public default <E> SealPile<E> chooseVConst(ReadWriteDependency<E> ifTrue, E ifFalse){
+        return choose(ifTrue, Piles.constant(ifFalse));
+    }
+
 	/**
 	 * @see PileBool#_chooseWritable(ReadDependency, ReadWriteDependency, ReadWriteDependency, ReadWriteDependency, SealPile)
 	 * @param <E>

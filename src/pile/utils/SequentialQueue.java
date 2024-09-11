@@ -114,6 +114,9 @@ public class SequentialQueue extends AbstractExecutorService{
 		this.exa = exa;
 		this.ws = ws==null?WaitService.get():ws;
 	}
+	protected long waitTime(int nopTimes) {
+		return nopTimes>2?0:1000;
+	}
 	/**
 	 * Submit a job.
 	 * @param task
@@ -148,7 +151,9 @@ public class SequentialQueue extends AbstractExecutorService{
 								int nopTimes=0;
 								synchronized(this) {
 									while(queue.isEmpty()) {
-										if(nopTimes>2) {
+										long waitTime = waitTime(nopTimes);
+
+										if(waitTime<=0) {
 											assert queueWorkerFuture==self;
 											if(queueWorkerFuture==self) {
 												queueWorkerFuture=null;
@@ -156,7 +161,7 @@ public class SequentialQueue extends AbstractExecutorService{
 											}
 											return;
 										}
-										WaitService.get().wait(this, 1000);
+										WaitService.get().wait(this, waitTime);
 										nopTimes++;
 									}
 									r = queue.poll();

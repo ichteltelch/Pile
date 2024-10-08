@@ -26,5 +26,9 @@ public class ValueEvent extends EventObject{
 	public boolean isTransformValueEvent() {
 		return false;
 	}
+	@Override
+	public String toString() {
+		return "ValueEvent[source=" + getSource() + "]";
+	}
 
 }

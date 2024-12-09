@@ -135,8 +135,12 @@ implements IPileBuilder<Self, V, E>{
 
 		private MyRecomputerForStaged(boolean dynamic, ScheduledExecutorService myExec,
 				Function<? super Recomputation<E>, ? extends Runnable> combi, V value, boolean ug,
-				BooleanSupplier delaySwitch, long delay, boolean logAllExceptions, boolean fov) {
-			super(dynamic);
+				BooleanSupplier delaySwitch, long delay, 
+				boolean logAllExceptions, 
+				boolean fov,
+				boolean nullNotInvalid
+				) {
+			super(dynamic, nullNotInvalid);
 			this.myExec = myExec;
 			this.combi = combi;
 			this.value = value;
@@ -217,7 +221,7 @@ implements IPileBuilder<Self, V, E>{
 							log.log(Level.WARNING, "Exception in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
 					}finally {
 						if(ug) {
-							unfulfilledWarning(value, re);
+							unfulfilledWarning(value, re, nullNotInvalid);
 						}
 						if(RENAME_RECOMPUTATION_THREADS && oName2!=null) {
 							Thread.currentThread().setName(oName2);
@@ -246,8 +250,8 @@ implements IPileBuilder<Self, V, E>{
 
 		private MyRecomputerForStaged0Delay(boolean dynamic, boolean ug, boolean fov, V value, BooleanSupplier delaySwitch,
 				Function<? super Recomputation<E>, ? extends Runnable> combi, boolean logAllExceptions,
-				ExecutorService myExec) {
-			super(dynamic);
+				ExecutorService myExec, boolean nullNotInvalid) {
+			super(dynamic, nullNotInvalid);
 			this.ug = ug;
 			this.fov = fov;
 			this.value = value;
@@ -330,7 +334,7 @@ implements IPileBuilder<Self, V, E>{
 							log.log(Level.WARNING, "Exception in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
 					}finally {
 						if(ug) {
-							unfulfilledWarning(value, re);
+							unfulfilledWarning(value, re, nullNotInvalid);
 						}
 						if(RENAME_RECOMPUTATION_THREADS && oName2!=null) {
 							Thread.currentThread().setName(oName2);
@@ -360,8 +364,8 @@ implements IPileBuilder<Self, V, E>{
 
 		private MyRecomputeForDelayed(boolean dynamic, boolean ug, BooleanSupplier delaySwitch, V value,
 				boolean logAllExceptions, long delay, Consumer<? super Recomputation<E>> dreco,
-				ScheduledExecutorService myExec, boolean fov) {
-			super(dynamic);
+				ScheduledExecutorService myExec, boolean fov, boolean nullNotInvalid) {
+			super(dynamic, nullNotInvalid);
 			this.ug = ug;
 			this.delaySwitch = delaySwitch;
 			this.value = value;
@@ -405,7 +409,7 @@ implements IPileBuilder<Self, V, E>{
 						log.log(Level.WARNING, "Exception in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
 				}finally {
 					if(ug) {
-						unfulfilledWarning(value, re);
+						unfulfilledWarning(value, re, nullNotInvalid);
 					}
 					if(RENAME_RECOMPUTATION_THREADS && oName2!=null) {
 						Thread.currentThread().setName(oName2);
@@ -433,8 +437,8 @@ implements IPileBuilder<Self, V, E>{
 		private final boolean ug;
 
 		private MyRecomputerFor0Delay(boolean dynamic, ExecutorService myExec, Consumer<? super Recomputation<E>> dreco,
-				V value, boolean logAllExceptions, BooleanSupplier delaySwitch, boolean fov, boolean ug) {
-			super(dynamic);
+				V value, boolean logAllExceptions, BooleanSupplier delaySwitch, boolean fov, boolean ug, boolean nullNotInvalid) {
+			super(dynamic, nullNotInvalid);
 			this.myExec = myExec;
 			this.dreco = dreco;
 			this.value = value;
@@ -475,7 +479,7 @@ implements IPileBuilder<Self, V, E>{
 						log.log(Level.WARNING, "Exception in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
 				}finally {
 					if(ug) {
-						unfulfilledWarning(value, re);
+						unfulfilledWarning(value, re, nullNotInvalid);
 					}
 					if(RENAME_RECOMPUTATION_THREADS && oName2!=null) {
 						Thread.currentThread().setName(oName2);
@@ -500,8 +504,8 @@ implements IPileBuilder<Self, V, E>{
 		private final boolean logAllExceptions;
 
 		public MyRecomputationForImmediate(boolean dynamic, V value, boolean ug,
-				Consumer<? super Recomputation<E>> dreco, boolean logAllExceptions) {
-			super(dynamic);
+				Consumer<? super Recomputation<E>> dreco, boolean logAllExceptions, boolean nullNotInvalid) {
+			super(dynamic, nullNotInvalid);
 			this.value = value;
 			this.ug = ug;
 			this.dreco = dreco;
@@ -539,7 +543,7 @@ implements IPileBuilder<Self, V, E>{
 					log.log(Level.WARNING, "Exception in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
 			}finally {
 				if(ug) {
-					unfulfilledWarning(value, re);
+					unfulfilledWarning(value, re, nullNotInvalid);
 				}
 				if(RENAME_RECOMPUTATION_THREADS && oName1!=null) {
 					Thread.currentThread().setName(oName1);
@@ -591,10 +595,12 @@ implements IPileBuilder<Self, V, E>{
 		Predicate<? super Dependency> dependenciesThatTriggerScouting;
 		Consumer<? super E> failHandler;
 		BiPredicate<? super Dependency, ? super Depender> mayRemoveDynamicDependency; 
+		boolean nullNotInvalid;
 
 
-		public MyRecomputer(boolean dynamic) {
+		public MyRecomputer(boolean dynamic, boolean nullNotInvalid) {
 			this.dynamic=dynamic;
+			this.nullNotInvalid=nullNotInvalid;
 		}
 		public boolean useDependencyScouting() {return dynamic;}
 		@Override
@@ -614,8 +620,10 @@ implements IPileBuilder<Self, V, E>{
 		}
 
 	}
+	boolean nullNotInvalid;
 	@Override
 	public V build() {
+		boolean nni = nullNotInvalid;
 		ICorrigibleBuilder.applyBounds(value, lowerBounds, upperBounds, ordering);
 		ReadListenDependency<? extends E> ub = ICorrigibleBuilder.getUpperBound(value);
 		ReadListenDependency<? extends E> lb = ICorrigibleBuilder.getLowerBound(value);
@@ -665,14 +673,14 @@ implements IPileBuilder<Self, V, E>{
 					combi=null;
 				else {
 					//immediate recomputation
-					reco=new MyRecomputationForImmediate<E, V>(dynamic, value, ug, ireco, logAllExceptions);
+					reco=new MyRecomputationForImmediate<E, V>(dynamic, value, ug, ireco, logAllExceptions, nni);
 					combi=null;
 				}
 			}else if(ireco==null) {
 				assert dreco!=null;
 				if(delay<0) {
 					//immediate recomputation
-					reco=new MyRecomputationForImmediate<E, V>(dynamic, value, ug, dreco, logAllExceptions);
+					reco=new MyRecomputationForImmediate<E, V>(dynamic, value, ug, dreco, logAllExceptions, nni);
 					combi=null;
 				}else {
 					combi=null;
@@ -680,12 +688,12 @@ implements IPileBuilder<Self, V, E>{
 						ExecutorService myExec = this.exec==null?
 								StandardExecutors.unlimited()
 								:this.exec;
-						reco=new MyRecomputerFor0Delay<E, V>(dynamic, myExec, dreco, value, logAllExceptions, delaySwitch, fov, ug);
+						reco=new MyRecomputerFor0Delay<E, V>(dynamic, myExec, dreco, value, logAllExceptions, delaySwitch, fov, ug, nni);
 					}else {
 						ScheduledExecutorService myExec = this.exec==null?
 								StandardExecutors.delayed()
 								:(ScheduledExecutorService) this.exec;
-						reco=new MyRecomputeForDelayed<E, V>(dynamic, ug, delaySwitch, value, logAllExceptions, delay, dreco, myExec, fov);
+						reco=new MyRecomputeForDelayed<E, V>(dynamic, ug, delaySwitch, value, logAllExceptions, delay, dreco, myExec, fov, nni);
 					}
 				}
 			}else {
@@ -715,7 +723,7 @@ implements IPileBuilder<Self, V, E>{
 						return null;
 					}finally {
 						if(ug && re != null) {
-							unfulfilledWarning(value, re);
+							unfulfilledWarning(value, re, nni);
 						}
 					}
 				};	
@@ -738,13 +746,13 @@ implements IPileBuilder<Self, V, E>{
 				ExecutorService myExec = this.exec==null?
 						StandardExecutors.unlimited()
 						:this.exec;
-				reco=new MyRecomputerForStaged0Delay<E, V>(dynamic, ug, fov, value, delaySwitch, combi, logAllExceptions, myExec);
+				reco=new MyRecomputerForStaged0Delay<E, V>(dynamic, ug, fov, value, delaySwitch, combi, logAllExceptions, myExec, nni);
 
 			}else {
 				ScheduledExecutorService myExec = this.exec==null?
 						StandardExecutors.delayed()
 						:(ScheduledExecutorService) this.exec;
-				reco=new MyRecomputerForStaged<E, V>(dynamic, myExec, combi, value, ug, delaySwitch, delay, logAllExceptions, fov);
+				reco=new MyRecomputerForStaged<E, V>(dynamic, myExec, combi, value, ug, delaySwitch, delay, logAllExceptions, fov, nni);
 			}
 		}
 		if(reco!=null) {
@@ -769,13 +777,22 @@ implements IPileBuilder<Self, V, E>{
 	 * @param value
 	 * @param re
 	 */
-	private static <V extends PileImpl<?>> void unfulfilledWarning(V value, Recomputation<?> re) {
-		if(re.fulfillInvalid()) {
+	private static <V extends PileImpl<?>> void unfulfilledWarning(V value, Recomputation<?> re, boolean nullNotInvalid) {
+		if(nullNotInvalid?re.fulfill(null):re.fulfillInvalid()) {
 			log.warning("Unfulfilled recomputation: "+value.avName);
 			value._printConstructionStackTrace();
 		}
 	}
 
+	public Self unfulfilledIsInvalid() {
+        nullNotInvalid=false;
+		return self();
+	}
+	public Self unfulfilledIsNull() {
+		nullNotInvalid=true;
+        return self();
+    }
+	
 	@Override
 	public Self dependOn(Dependency d) {
 		value.addDependency(d, false);

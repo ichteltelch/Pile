@@ -381,15 +381,19 @@ HasInternalLock
 						try {
 							long t0 = System.currentTimeMillis();
 							boolean didntWarnYet=true;
+							long backOffTime = (int)(1000*Math.exp(2*Math.random()-1));
 							while(someThreadIsWorkingInformQueue!=null) {
 								if(evade)
 									return;
 								//								if(ET_TRACE && traceEnabledFor(this))
 								//									trace("inform queue already running");
-								WaitService.get().wait(informRunnerMutex, 100);
+								WaitService.get().wait(informRunnerMutex, (long)(20*Math.exp(2*Math.random()-1)));
+								
+								if(someThreadIsWorkingInformQueue==null)
+									break;
 								long timeElapsed=System.currentTimeMillis()-t0;
 
-								if(timeElapsed>2500 & didntWarnYet) {
+								if(timeElapsed>backOffTime & didntWarnYet) {
 									didntWarnYet=false;
 									if(DE) {
 										DebugEnabled.requestStop(someThreadIsWorkingInformQueue, this);
@@ -400,11 +404,11 @@ HasInternalLock
 										log.log(Level.WARNING, "Likely informQueue deadlock involving "+avName+" in Thread "+Thread.currentThread().getName(), x);
 									}		
 								}
-								if(timeElapsed>5000) {
+								if(timeElapsed>backOffTime*2) {
 									log.severe("Resolved a likely informQueue deadlock involving "+avName);
 									//Ensure that we don't end up with long-term unprocessed items in the informQueue
 									if(Thread.currentThread().getName().startsWith("walkInformQueue deadlock resolver")) {
-										if(timeElapsed>10000)
+										if(timeElapsed>backOffTime*4)
 											return;
 									}else {
 										Thread resolveLater = new Thread(this::workInformQueueDelayed);

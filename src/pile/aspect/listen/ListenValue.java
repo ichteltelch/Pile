@@ -23,6 +23,7 @@ import pile.utils.defer.DeferrerQueue;
 public interface ListenValue {
 	
 	public static final Deferrer DEFER = Deferrer.makeThreadLocal(DeferrerQueue.FiFo::new);
+//	public static final Deferrer DEFER = Deferrer.DONT;
 
 
 	/**

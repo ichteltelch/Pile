@@ -16,9 +16,15 @@ public abstract class TransformReaction implements Runnable{
 	 */
 	public static enum ReactionType{
 		/**
-		 * Don't react to the transform request. The value will remain unchanged
+		 * Don't react to the transform request. The value will remain unchanged, unless dependencies
+		 * become invalid and/or recompute themselves
 		 */
 		IGNORE, 
+		/**
+         * Don't react to the transform request. The pre-transfomation value 
+         * will be restored.
+         */
+		UNCHANGING,
 		/**
 		 * Propagate the transform request to all {@link Depender}s, but do not transform yourself
 		 * and to not start a transaction
@@ -75,8 +81,13 @@ public abstract class TransformReaction implements Runnable{
 	 * The singleton wrapper for {@link ReactionType#JUST_PROPAGATE_WITH_TRANSACTION}
 	 */
 	public static final TransformReaction JUST_PROPAGATE_WITH_TRANSACTION=new UntypedReaction(ReactionType.JUST_PROPAGATE_WITH_TRANSACTION);
+	/**
+     * The singleton wrapper for {@link ReactionType#UNCHANGING}
+     */
+	public static final TransformReaction UNCHANGING=new UntypedReaction(ReactionType.UNCHANGING);
 	public static <E> TransformReaction ignore(){return IGNORE;}
 	public static <E> TransformReaction recompute(){return RECOMPUTE;}
 	public static <E> TransformReaction justPropagate_noTransaction(){return JUST_PROPAGATE_NO_TRANSACTION;}
 	public static <E> TransformReaction justPropagateWithTransaction(){return JUST_PROPAGATE_WITH_TRANSACTION;}
+	public static <E> TransformReaction unchanging(){return UNCHANGING;}
 }

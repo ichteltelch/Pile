@@ -22,6 +22,7 @@ public interface TransformHandler<E> {
 
 	TransformHandler<?> IGNORE = (v, t)->TransformReaction.IGNORE;
 	TransformHandler<?> RECOMPUTE = (v, t)->TransformReaction.RECOMPUTE;
+	TransformHandler<?> UNCHANGING = (v, t)->TransformReaction.UNCHANGING;
 	TransformHandler<?> JUST_PROPAGATE_NO_TRANSACTION = (v, t)->TransformReaction.JUST_PROPAGATE_NO_TRANSACTION;
 	TransformHandler<?> JUST_PROPAGATE_WITH_TRANSACTION = (v, t)->TransformReaction.JUST_PROPAGATE_WITH_TRANSACTION;
 	@SuppressWarnings("unchecked")
@@ -32,7 +33,8 @@ public interface TransformHandler<E> {
 	public static <E> TransformHandler<E> justPropagate_noTransaction(){return (TransformHandler<E>) JUST_PROPAGATE_NO_TRANSACTION;}
 	@SuppressWarnings("unchecked")
 	public static <E> TransformHandler<E> justPropagateWithTransaction(){return (TransformHandler<E>) JUST_PROPAGATE_WITH_TRANSACTION;}
-
+	@SuppressWarnings("unchecked")
+	public static <E> TransformHandler<E> unchanging() {return (TransformHandler<E>) UNCHANGING;}
 //	public default boolean allowMultipleTransforms() {return false;}
 //	public interface AllowingMultipleTransforms<E> extends TransformHandler<E>{
 //		public default boolean allowMultipleTransforms() {return true;}
@@ -70,4 +72,5 @@ public interface TransformHandler<E> {
 				cancelCode.run();
 		}
 	}
+
 }

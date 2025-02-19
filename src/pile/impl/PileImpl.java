@@ -3364,6 +3364,7 @@ implements Pile<E>, HasAssociations.Mixin
 			}
 			switch(reaction.getType()) {
 			case IGNORE:
+			case UNCHANGING:
 			case JUST_PROPAGATE_NO_TRANSACTION:
 			case JUST_PROPAGATE_WITH_TRANSACTION:
 			case RECOMPUTE:

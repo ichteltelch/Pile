@@ -2,8 +2,10 @@ package pile.aspect.transform;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import pile.aspect.AutoValidationSuppressible;
 import pile.aspect.CorrigibleValue;
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
@@ -104,7 +106,8 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 	default public void collectTransformReactions(
 			Object transform, 
 			Map<? super TransformableValue<?>, ? super TransformReaction> reactions, SuppressMany tts,
-			SuppressMany releaseAfterCollect
+			SuppressMany releaseAfterCollect,
+			List<Runnable> afterTransform
 			) throws InterruptedException {
 		if(reactions.containsKey(this))
 			return;
@@ -122,6 +125,43 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 		reactions.put(this, r);
 		//		if(r.getType()==ReactionType.IGNORE)
 		switch(r.getType()) {
+		case UNCHANGING:
+		{
+			boolean valid = isValid();
+			E value;
+			Suppressor sup;
+			if(this instanceof AutoValidationSuppressible) {
+				sup = ((AutoValidationSuppressible)this)
+						.suppressAutoValidation()
+						.wrapWeak();
+			}else
+				sup = Suppressor.NOP;
+			Suppressor msup = sup;
+			try {
+				if(valid) {
+					try {
+						value = getValidOrThrow();
+
+						afterTransform.add(()->{
+							set(value);
+							sup.release();
+						});
+					}catch(InvalidValueException x) {
+						valid=false;
+					}
+				}
+				if(!valid) {
+					afterTransform.add(()->{
+						revalidate();
+						sup.release();
+					});
+				}
+				msup=null;
+			}finally {
+				if(msup!=null)
+					msup.release();
+			}
+		}
 		case IGNORE:
 		case RECOMPUTE:
 			releaseAfterCollect.makePlaceFor1().add(tt);
@@ -135,7 +175,9 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 				d.giveDependers(dd->{
 					if(dd instanceof TransformableValue)
 						try {
-							((TransformableValue<?>)dd).collectTransformReactions(transform, reactions, tts, releaseAfterCollect);
+							((TransformableValue<?>)dd).collectTransformReactions(
+									transform, reactions, tts, 
+									releaseAfterCollect, afterTransform);
 						} catch (InterruptedException e) {
 							StandardExecutors.interruptSelf();
 						}
@@ -161,9 +203,11 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 	default public void transform(Object transform, Runnable afterCollect) throws InterruptedException {
 		Map<TransformableValue<?>, TransformReaction> reactions=new HashMap<>();
 		SuppressMany tts = Suppressor.many(); 
+		ArrayList<Runnable> afterTransform = new ArrayList<>();
 		try(Suppressor tts2=tts; SuppressMany rac=Suppressor.many()){
 			synchronized(GLOBAL_TRANSFORM_COLLECT_MUTEX) {
-				collectTransformReactions(transform, reactions, tts, rac);
+				collectTransformReactions(transform, reactions, tts, 
+						rac, afterTransform);
 			}
 			rac.release();
 			ArrayList<Runnable> asyncJobs=new ArrayList<>();
@@ -180,6 +224,7 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 					TransformReaction r = e.getValue();
 					switch(r.getType()) {
 					case IGNORE:
+					case UNCHANGING:
 					case JUST_PROPAGATE_NO_TRANSACTION:
 						break;
 					case JUST_PROPAGATE_WITH_TRANSACTION:
@@ -207,6 +252,9 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 			}finally {
 				ct.setName(oldName);
 			}
+		}finally {
+			for(Runnable r: afterTransform)
+				StandardExecutors.safe(r);
 		}
 	}
 

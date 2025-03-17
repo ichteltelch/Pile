@@ -310,7 +310,48 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 				.dependOn(false, op1Val, op2Val, op1Vb, op2Vb)
 				.build();
 	}
+	/**
+	 * Combine two booleans according to the following table
+	 * <pre>
+	 *   I F T N
+	 * I I I I I  
+	 * F I F F F 
+	 * T I F T T
+	 * N I F T N
+	 * </pre>
+	 * @param op1
+	 * @param op2
+	 * @return
+	 */
+	public static SealBool andNn(ReadDependency<? extends Boolean> op1, ReadDependency<? extends Boolean> op2) {
+		String op1Name = op1.dependencyName();
+		String op2Name = op2.dependencyName();
+		String name = "("+(op1Name==null?"?":op1Name)+" &n& " + (op2Name==null?"?":op2Name)+")";
+		if(op1==op2) {
+			return new SealPileBuilder<>(new SealBool())
+					.recompute(op1::get)
+					.seal()
+					.name(name)
+					.whenChanged(op1);
+		}
+		return new SealPileBuilder<>(new SealBool())
+				.recompute(reco->{
+					Boolean o1 = op1.get();
+					Boolean o2 = op2.get();
 
+					if((o1!=null && !o1) || (o2!=null && !o2)) {
+						reco.fulfill(Boolean.FALSE);
+					}else if(o1!=null || o2!=null ) {
+						reco.fulfill(Boolean.TRUE);
+					}else {
+						reco.fulfill(null);
+					}
+				})
+				.name(name)
+				.seal()
+				.dependOn(true, op1, op2)
+				.build();
+	}
 	/**
 	 * Combine two booleans according to the following table
 	 * <pre>
@@ -509,6 +550,48 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 				.name(name)
 				.seal()
 				.dependOn(false, op1, op2)
+				.build();
+	}
+	/**
+	 * Combine two booleans according to the following table
+	 * <pre>
+	 *   I T F N
+	 * I I I I I  
+	 * T I T T T 
+	 * F I T F F
+	 * N I T F N
+	 * </pre>
+	 * @param op1
+	 * @param op2
+	 * @return
+	 */
+	public static SealBool orNn(ReadDependency<? extends Boolean> op1, ReadDependency<? extends Boolean> op2) {
+		String op1Name = op1.dependencyName();
+		String op2Name = op2.dependencyName();
+		String name = "("+(op1Name==null?"?":op1Name)+" |n| " + (op2Name==null?"?":op2Name)+")";
+		if(op1==op2) {
+			return new SealPileBuilder<>(new SealBool())
+					.recompute(op1::get)
+					.seal()
+					.name(name)
+					.whenChanged(op1);
+		}
+		return new SealPileBuilder<>(new SealBool())
+				.recompute(reco->{
+					Boolean o1 = op1.get();
+					Boolean o2 = op2.get();
+
+					if((o1!=null && o1) || (o2!=null && o2)) {
+						reco.fulfill(Boolean.TRUE);
+					}else if(o1!=null || o2!=null ) {
+						reco.fulfill(Boolean.FALSE);
+					}else {
+						reco.fulfill(null);
+					}
+				})
+				.name(name)
+				.seal()
+				.dependOn(true, op1, op2)
 				.build();
 	}
 	/**
@@ -905,7 +988,19 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 	 public static ReadListenDependencyBool conjunction3(ReadListenDependency<? extends Boolean>... items) {
 		 return Piles.aggregate(i->i==Piles.TRUE, Piles.and3Aggregator, items);
 	 }
-
+	 /**
+	  * Aggregate some reactive values using the {@link PileBool#andNn(ReadDependency)} operation.
+	  */
+	 public static ReadListenDependencyBool conjunctionNa(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
+		 return Piles.aggregate(i->i==Piles.<Boolean>constNull(), Piles.andNnAggregator, items);
+	 }
+	 /**
+	  * Aggregate some reactive values using the {@link PileBool#andNn(ReadDependency)} operation.
+	  */
+	 @SafeVarargs
+	 public static ReadListenDependencyBool conjunctionNa(ReadListenDependency<? extends Boolean>... items) {
+		 return Piles.aggregate(i->i==Piles.<Boolean>constNull(), Piles.andNnAggregator, items);
+	 }
 
 	 /**
 	  * Aggregate some reactive values using the {@link PileBool#or(ReadDependency)} operation.
@@ -946,7 +1041,19 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 	 public static ReadListenDependencyBool disjunction3(ReadListenDependency<? extends Boolean>... items) {
 		 return Piles.aggregate(i->i==Piles.FALSE, Piles.or3Aggregator, items);
 	 }
-
+	 /**
+	  * Aggregate some reactive values using the {@link PileBool#orNn(ReadDependency)} operation.
+	  */
+	 public static ReadListenDependencyBool disjunctionNa(Iterable<? extends ReadListenDependency<? extends Boolean>> items) {
+		 return Piles.aggregate(i->i==Piles.<Boolean>constNull(), Piles.orNnAggregator, items);
+	 }
+	 /**
+	  * Aggregate some reactive values using the {@link PileBool#orNn(ReadDependency)} operation.
+	  */
+	 @SafeVarargs
+	 public static ReadListenDependencyBool disjunctionNa(ReadListenDependency<? extends Boolean>... items) {
+		 return Piles.aggregate(i->i==Piles.<Boolean>constNull(), Piles.orNnAggregator, items);
+	 }
 	 /**
 	  * Make a reactive boolean that computes itself using the given {@link BiPredicate} applied on two reactive values
 	  * @param <O1>

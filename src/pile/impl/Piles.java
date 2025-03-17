@@ -2326,6 +2326,10 @@ public class Piles {
 	 */
 	public static final BoolAggregator and3Aggregator = new BoolAggregator(true, PileBool::and3);
 	/**
+	 * The {@link AggregationMonoid} for the {@link PileBool#and(ReadDependency, ReadDependency) andNn} operation.
+	 */
+	public static final BoolAggregator andNnAggregator = new BoolAggregator(null, PileBool::andNn);
+	/**
 	 * The {@link AggregationMonoid} for the {@link PileBool#or(ReadDependency, ReadDependency) or} operation.
 	 */
 	public static final BoolAggregator orAggregator = new BoolAggregator(false, PileBool::or);
@@ -2337,6 +2341,10 @@ public class Piles {
 	 * The {@link AggregationMonoid} for the {@link PileBool#or3(ReadDependency, ReadDependency) or3} operation.
 	 */
 	public static final BoolAggregator or3Aggregator = new BoolAggregator(false, PileBool::or3);
+	/**
+	 * The {@link AggregationMonoid} for the {@link PileBool#or(ReadDependency, ReadDependency) orNn} operation.
+	 */
+	public static final BoolAggregator orNnAggregator = new BoolAggregator(null, PileBool::orNn);
 
 
 	/**

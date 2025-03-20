@@ -2781,4 +2781,31 @@ public class Piles {
 		shouldDeepRevalidate.set(should);
 		return ret;
 	}
+
+	@SafeVarargs
+	public static <T> ReadListenDependency<T> firstNonNull(
+			ReadDependency<? extends T>... possibilities){
+		ReadDependency<? extends T>[] fp = possibilities.clone();
+			
+		return Piles.<T>compute(reco->{
+			for(ReadDependency<? extends T> p: fp) {
+				if(p==null)
+					continue;
+				if(!p.isValid()) {
+					reco.fulfillInvalid();
+					return;
+				}
+				try {
+					T got = p.getValidOrThrow();
+					if(got!=null) {
+						reco.fulfill(got);
+						return;
+					}
+				}catch(InvalidValueException e) {
+					reco.fulfillInvalid();
+					return;
+				}
+			}
+		}).dd();
+	}
 }

@@ -285,6 +285,20 @@ public class SequentialQueue extends AbstractExecutorService{
 		if(q!=null)
 			q.clear();
 	}
+	
+	/**
+	 * Discard all currently queued jobs
+	 */
+	public synchronized void trimQueue(int maxSize, boolean removeFromFrontNotBack) {
+		if(q!=null) {
+			while(q.size()>maxSize) {
+				if(removeFromFrontNotBack)
+                    q.removeFirst();
+                else
+                    q.removeLast();
+			}
+		}
+	}
 	/**
 	 * Interrupt the worker {@link Thread} of this {@link SequentialQueue}
 	 */

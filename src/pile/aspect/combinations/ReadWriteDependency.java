@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import pile.aspect.Dependency;
 import pile.aspect.ReadValue;
+import pile.aspect.VetoException;
 import pile.aspect.WriteValue;
 import pile.aspect.suppress.Suppressor;
 import pile.builder.SealPileBuilder;
@@ -222,6 +223,38 @@ public interface ReadWriteDependency<E> extends ReadWriteValue<E>, ReadDependenc
 		return this;
 	}
 
-
+	/**
+	 * Make a reactive boolean that reflects whether this value is currently equal to the given constant.
+	 * When an attempt is made to write to the returned reactive boolean, then setting it to true will cause the constant to be written to this value,
+	 * and setting it to false will cause this value to be set to null, but only if the current value is equal to the constant.
+	 * @param value
+	 * @return
+	 */
+	public default SealBool isEqualConstRW(E value) {
+		return isEqualConstRW(value, Pile.DEFAULT_BIJECT_EQUIVALENCE);
+	}
+	/**
+	 * Make a reactive boolean that reflects whether this value is currently equal to the given constant.
+	 * When an attempt is made to write to the returned reactive boolean, then setting it to true will cause the constant to be written to this value,
+	 * and setting it to false will cause this value to be set to null, but only if the current value is equal to the constant.
+	 * @param value
+	 * @param eq The equivalence relation to be used
+	 * @return
+	 */
+	public default SealBool isEqualConstRW(E value, BiPredicate<? super E, ? super E> eq) {
+		return PileBool.sb()
+				.recompute(()->eq.test(value, get()))
+				.seal((nv)->{
+					if(nv==null)
+						throw new VetoException();
+					if(nv) {
+						set(value);
+					}else if(eq.test(value, get())) {
+						set(null);
+					}
+				})
+				.parent(this)
+				.whenChanged(this);
+	}
 
 }

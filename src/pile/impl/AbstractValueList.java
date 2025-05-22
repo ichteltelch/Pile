@@ -330,7 +330,7 @@ implements Iterable<E>{
 	 * Remove the first element that {@link #equals(Object)} the given value.
 	 * @param e
 	 */
-	public void removeFirst(E e) {
+	public void removeFirst(Object e) {
 		if(e==null)
 			removeFirst(Functional.IS_NULL);
 		else
@@ -345,6 +345,17 @@ implements Iterable<E>{
 			if(e.test(it.next())) {
 				it.remove();
 				return;
+			}
+		}
+	}
+	/**
+	 * Remove the all elements that fulfill the given {@link Predicate}
+	 * @param e
+	 */
+	public void removeAll(Predicate<? super E> e) {
+		for(Iterator<E> it=iterator(); it.hasNext(); ) {
+			if(e.test(it.next())) {
+				it.remove();
 			}
 		}
 	}
@@ -528,7 +539,7 @@ implements Iterable<E>{
 	 * @param sel
 	 * @return
 	 */
-	public int indexOf(E sel) {
+	public int indexOf(Object sel) {
 		int ret=0;
 		for(E e: this) {
 			if(Objects.equals(sel, e))

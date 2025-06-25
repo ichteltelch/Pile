@@ -85,6 +85,11 @@ implements Pile<E>, HasAssociations.Mixin
 	volatile boolean lazyValidating;
 
 	BehaviorDuringTransform bdt=BehaviorDuringTransform.NOP;
+	
+	public PileImpl<E> setBehaviorDuringTransform(BehaviorDuringTransform b){
+		bdt = b;
+		return this;
+	}
 
 	//dependency fields
 	HashSet<Dependency> _thisDependsOn;
@@ -3429,7 +3434,7 @@ implements Pile<E>, HasAssociations.Mixin
 			if(transformTransactionStarterThread==Thread.currentThread())
 				return;
 			while(transformThread!=null || transformTransactions>0 ) {
-				if(bdt==BehaviorDuringTransform.THROW_TRANSFORMINGEXCEPTION)
+				if(bdt2==BehaviorDuringTransform.THROW_TRANSFORMINGEXCEPTION)
 					throw new TransformingException();
 				try {
 					WaitService.get().wait(getTransformMutex(), 1000);

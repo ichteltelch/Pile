@@ -13,6 +13,7 @@ import pile.aspect.HasInfluencers;
 import pile.aspect.LazyValidatable;
 import pile.aspect.recompute.Recomputation;
 import pile.aspect.recompute.Recomputer;
+import pile.aspect.transform.BehaviorDuringTransform;
 import pile.aspect.transform.TransformHandler;
 import pile.impl.DebugCallback;
 import pile.impl.PileImpl;
@@ -178,5 +179,7 @@ AutoValidationSuppressible.Single
 	default Pile<E> asDependency() {
 		return this;
 	}
+	public Pile<E> setBehaviorDuringTransform(BehaviorDuringTransform b);
+
 }
 

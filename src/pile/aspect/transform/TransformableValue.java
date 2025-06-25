@@ -248,7 +248,7 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 				// End the transform transactions before the regular transactions, in case that ending the 
 				// regular transactions invokes code (recomputation or event handlers or so) 
 				// that would block while the transform transactions are active
-				tts.release();
+//				tts.release();
 			}finally {
 				ct.setName(oldName);
 			}

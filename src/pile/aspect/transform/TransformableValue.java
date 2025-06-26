@@ -10,6 +10,7 @@ import pile.aspect.CorrigibleValue;
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
 import pile.aspect.combinations.ReadWriteValue;
+import pile.aspect.listen.ListenValue;
 import pile.aspect.suppress.Suppressor;
 import pile.aspect.suppress.Suppressor.SuppressMany;
 import pile.aspect.transform.TransformHandler.TypedReaction;
@@ -201,60 +202,69 @@ public interface TransformableValue<E> extends ReadWriteValue<E>{
 	 * @throws InterruptedException
 	 */
 	default public void transform(Object transform, Runnable afterCollect) throws InterruptedException {
-		Map<TransformableValue<?>, TransformReaction> reactions=new HashMap<>();
-		SuppressMany tts = Suppressor.many(); 
-		ArrayList<Runnable> afterTransform = new ArrayList<>();
-		try(Suppressor tts2=tts; SuppressMany rac=Suppressor.many()){
-			synchronized(GLOBAL_TRANSFORM_COLLECT_MUTEX) {
-				collectTransformReactions(transform, reactions, tts, 
-						rac, afterTransform);
-			}
-			rac.release();
-			ArrayList<Runnable> asyncJobs=new ArrayList<>();
-			ArrayList<Runnable> syncJobs=new ArrayList<>();
-			Thread ct = Thread.currentThread();
-			String oldName = ct.getName();
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
 
-			try(SuppressMany recomputationSuppressed=Suppressor.many();
-					SuppressMany ts = Suppressor.many()){
-				ct.setName("Transformation main thread");
 
-				for(Map.Entry<TransformableValue<?>, TransformReaction> e: reactions.entrySet()) {
-					TransformableValue<?> v = e.getKey();
-					TransformReaction r = e.getValue();
-					switch(r.getType()) {
-					case IGNORE:
-					case UNCHANGING:
-					case JUST_PROPAGATE_NO_TRANSACTION:
-						break;
-					case JUST_PROPAGATE_WITH_TRANSACTION:
-						ts.makePlaceFor1().add(v.transaction());
-						break;
-					case RECOMPUTE:
-						recomputationSuppressed.makePlaceFor1().add(v.transaction());
-						v.runTransformRevalidate();
-						break;
-					case MUTATE: 
-					case REPLACE:
-						(r.fast()?syncJobs:asyncJobs).add(r);
-						ts.makePlaceFor1().add(v.transaction());
-						break;
-					}
+			Map<TransformableValue<?>, TransformReaction> reactions=new HashMap<>();
+			SuppressMany tts = Suppressor.many(); 
+			ArrayList<Runnable> afterTransform = new ArrayList<>();
+			try(Suppressor tts2=tts; SuppressMany rac=Suppressor.many()){
+				synchronized(GLOBAL_TRANSFORM_COLLECT_MUTEX) {
+					collectTransformReactions(transform, reactions, tts, 
+							rac, afterTransform);
 				}
-				Runnable syncJob = ()->syncJobs.forEach(Runnable::run);
-				StandardExecutors.safe(afterCollect);
-				StandardExecutors.parallel(asyncJobs, syncJob);
+				rac.release();
+				ArrayList<Runnable> asyncJobs=new ArrayList<>();
+				ArrayList<Runnable> syncJobs=new ArrayList<>();
+				Thread ct = Thread.currentThread();
+				String oldName = ct.getName();
 
-				// End the transform transactions before the regular transactions, in case that ending the 
-				// regular transactions invokes code (recomputation or event handlers or so) 
-				// that would block while the transform transactions are active
-//				tts.release();
+				try(SuppressMany recomputationSuppressed=Suppressor.many();
+						SuppressMany ts = Suppressor.many()){
+					ct.setName("Transformation main thread");
+
+					for(Map.Entry<TransformableValue<?>, TransformReaction> e: reactions.entrySet()) {
+						TransformableValue<?> v = e.getKey();
+						TransformReaction r = e.getValue();
+						switch(r.getType()) {
+						case IGNORE:
+						case UNCHANGING:
+						case JUST_PROPAGATE_NO_TRANSACTION:
+							break;
+						case JUST_PROPAGATE_WITH_TRANSACTION:
+							ts.makePlaceFor1().add(v.transaction());
+							break;
+						case RECOMPUTE:
+							recomputationSuppressed.makePlaceFor1().add(v.transaction());
+							v.runTransformRevalidate();
+							break;
+						case MUTATE: 
+						case REPLACE:
+							(r.fast()?syncJobs:asyncJobs).add(r);
+							ts.makePlaceFor1().add(v.transaction());
+							break;
+						}
+					}
+					Runnable syncJob = ()->syncJobs.forEach(Runnable::run);
+					StandardExecutors.safe(afterCollect);
+					StandardExecutors.parallel(asyncJobs, syncJob);
+
+					// End the transform transactions before the regular transactions, in case that ending the 
+					// regular transactions invokes code (recomputation or event handlers or so) 
+					// that would block while the transform transactions are active
+					// This was a bad idea however, as transforming values could be observed 
+					// while temporarily invalid
+					//				tts.release();
+				}finally {
+					ct.setName(oldName);
+				}
 			}finally {
-				ct.setName(oldName);
+				for(Runnable r: afterTransform)
+					StandardExecutors.safe(r);
 			}
 		}finally {
-			for(Runnable r: afterTransform)
-				StandardExecutors.safe(r);
+			ListenValue.DEFER.__decrementSuppressors();
 		}
 	}
 

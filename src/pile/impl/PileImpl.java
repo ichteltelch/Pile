@@ -3232,6 +3232,7 @@ implements Pile<E>, HasAssociations.Mixin
 	public void beginTransformTransaction() throws InterruptedException{
 		//		boolean wasOngoing = cancelPendingRecomputation(true);
 
+//		__beginTransaction();
 		Object tm = getTransformMutex();
 		synchronized (tm) {
 			if(transformTransactions>1)
@@ -3279,6 +3280,9 @@ implements Pile<E>, HasAssociations.Mixin
 			}
 			transformTransactionStarterThread=null;
 		}
+//		__endTransaction();
+		__scheduleRecomputation(false);
+		__startPendingRecompute(false);
 
 
 		//		if(et) {

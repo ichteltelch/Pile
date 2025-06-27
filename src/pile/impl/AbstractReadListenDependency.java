@@ -1418,8 +1418,9 @@ HasInternalLock
 					b.open(__value(), this);
 					activeBrackets.add(b);
 				}catch(Exception|AssertionError x) {
-					ListenValue.DEFER.__decrementSuppressors();		
 					log.log(Level.WARNING, "Exception while opening bracket: ",x);
+				}finally {
+					ListenValue.DEFER.__decrementSuppressors();		
 				}
 			}
 		}
@@ -1441,8 +1442,9 @@ HasInternalLock
 					b.open(__oldValue(), this);
 					activeOldBrackets.add(b);
 				}catch(Exception|AssertionError x) {
-					ListenValue.DEFER.__decrementSuppressors();
 					log.log(Level.WARNING, "Exception while opening bracket: ",x);
+				}finally {
+					ListenValue.DEFER.__decrementSuppressors();		
 				}
 			}
 		}

@@ -1,15 +1,19 @@
 package pile.utils.defer;
 
+import java.util.ArrayList;
+
 import pile.aspect.suppress.Suppressor;
 import pile.interop.exec.StandardExecutors;
 
 public class DefererImpl implements Deferrer {
+	static final boolean DEBUG = false;
 	int shouldBeDeferring;
 	volatile int hasStartedRunningDeferred;
 	final DeferrerQueue q;
 	public DefererImpl(DeferrerQueue q) {
 		this.q = q;
 	}
+	ArrayList<Throwable> trace = DEBUG? new ArrayList<Throwable>() : null;
 	
 	protected void runDeferredIfNotDeferring() {
 		if(shouldBeDeferring==0 && !isQueueEmpty()) {
@@ -78,10 +82,19 @@ public class DefererImpl implements Deferrer {
 	@Override
 	public void __incrementSuppressors() {
 		shouldBeDeferring++;
+		if(DEBUG)
+			try {
+				throw new RuntimeException();
+			}catch(RuntimeException x) {
+				trace.add(x);
+			}
 	}
 	@Override
 	public void __decrementSuppressors() {
 		shouldBeDeferring--;
+		if(DEBUG) {
+			trace.remove(trace.size()-1);
+		}
 		if(shouldBeDeferring<=0) {
 			runDeferredIfNotDeferring();
 			//TODO: warn if negative

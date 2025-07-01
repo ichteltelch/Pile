@@ -1,16 +1,19 @@
 package pile.specialized_double;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.ToDoubleBiFunction;
 
+import pile.aspect.AutoValidationSuppressible;
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
 import pile.aspect.combinations.Pile;
 import pile.aspect.combinations.ReadDependency;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadWriteDependency;
+import pile.aspect.suppress.Suppressor;
 import pile.builder.FulfillInvalid;
 import pile.builder.IBuilder;
 import pile.builder.IndependentBuilder;
@@ -25,6 +28,7 @@ import pile.specialized_Comparable.PileComparable;
 import pile.specialized_double.combinations.ReadListenDependencyDouble;
 import pile.specialized_double.combinations.ReadValueDouble;
 import pile.specialized_double.combinations.ReadWriteListenDependencyDouble;
+import pile.specialized_double.combinations.WriteValueDouble;
 import pile.specialized_int.SealInt;
 import pile.utils.Bijection;
 
@@ -837,5 +841,43 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 	 * @return
 	 */
 	public static IndependentBuilder<IndependentDouble, Double> ib(Double init){return new IndependentBuilder<>(new IndependentDouble(init)).ordering(Comparator.naturalOrder());}
+	
+	/**
+	 * A value that reflects the average of the given values.
+	 * If written to, it will set the value of all the given values to the new average.
+	 * Note: if the input values do for some reason no change to the given value,
+	 * the average value will assume the value of their actual average after the write attempt.
+	 * 
+	 * @param items
+	 * @return
+	 */
+	
+	public static ReadWriteListenDependencyDouble writableAverage(ReadWriteListenDependencyDouble... items) {
+		Objects.requireNonNull(items);
+		for(Object o: items)
+			Objects.requireNonNull(o);
+		ReadListenDependencyDouble sum = sum(items);
+		return Piles.sealed(sum.get())
+				.recompute(()->{
+					Double s = sum.get();
+					if(s==null)
+						return s;
+					return s/items.length;
+				})
+				.seal(v->{
+					AutoValidationSuppressible asum;
+					if(sum instanceof AutoValidationSuppressible) {
+						asum = (AutoValidationSuppressible)sum;
+						try (Suppressor _s = asum.suppressAutoValidation()) {
+							for(WriteValueDouble i: items)
+								i.set(v);
+						}
+					} else {
+						for(WriteValueDouble i: items)
+							i.set(v);
+					}
+				})
+				.build();
+	}
 
 }

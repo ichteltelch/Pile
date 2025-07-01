@@ -127,7 +127,7 @@ AlwaysValid<T>
         	T oldValue = currentValue;
         	try {
         		currentValue = decode.apply(newString);
-        		newString = currentString;
+        		currentString = newString;
         	}catch(Exception e) {
         		logger.log(Level.WARNING, "Error decoding preferences value for key " + key, e);
         		currentValue = defaultValue.get();

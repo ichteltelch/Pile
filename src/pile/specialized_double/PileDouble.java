@@ -877,7 +877,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 							i.set(v);
 					}
 				})
-				.build();
+				.whenChanged(sum);
 	}
 
 }

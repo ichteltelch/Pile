@@ -3,6 +3,7 @@ package pile.specialized_double;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.ToDoubleBiFunction;
 
@@ -31,6 +32,7 @@ import pile.specialized_double.combinations.ReadWriteListenDependencyDouble;
 import pile.specialized_double.combinations.WriteValueDouble;
 import pile.specialized_int.SealInt;
 import pile.utils.Bijection;
+import pile.utils.Functional;
 
 public interface PileDouble 
 extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
@@ -842,6 +844,17 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 	 */
 	public static IndependentBuilder<IndependentDouble, Double> ib(Double init){return new IndependentBuilder<>(new IndependentDouble(init)).ordering(Comparator.naturalOrder());}
 	
+
+	
+	public static ReadWriteListenDependencyDouble writableAverage(ReadWriteListenDependencyDouble... items) {
+		return writableAverage(false, false, items);
+	}
+	public static ReadWriteListenDependencyDouble writableAverage(
+			boolean writeSourcesIfUnchanged,
+			boolean flicker, 
+			ReadWriteListenDependencyDouble... items) {
+		return writableAverage(writeSourcesIfUnchanged?Functional.CONST_FALSE:Objects::equals, flicker, items);
+	}
 	/**
 	 * A value that reflects the average of the given values.
 	 * If written to, it will set the value of all the given values to the new average.
@@ -851,8 +864,10 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 	 * @param items
 	 * @return
 	 */
-	
-	public static ReadWriteListenDependencyDouble writableAverage(ReadWriteListenDependencyDouble... items) {
+	public static ReadWriteListenDependencyDouble writableAverage(
+			BiPredicate<? super Double, ? super Double> writeUnworthyChange, 
+			boolean flicker, 
+			ReadWriteListenDependencyDouble... items) {
 		Objects.requireNonNull(items);
 		for(Object o: items)
 			Objects.requireNonNull(o);
@@ -864,7 +879,13 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 						return s;
 					return s/items.length;
 				})
-				.seal(v->{
+				.sealWithSetter((setter, v)->{
+					Double s = sum.get();
+					
+					if(s!=null && writeUnworthyChange.test(v, s/items.length))
+						return;
+					if(flicker)
+						setter.set(v);
 					AutoValidationSuppressible asum;
 					if(sum instanceof AutoValidationSuppressible) {
 						asum = (AutoValidationSuppressible)sum;
@@ -876,6 +897,9 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 						for(WriteValueDouble i: items)
 							i.set(v);
 					}
+					s = sum.get();
+					if(s!=null)
+						setter.set(s/items.length);
 				})
 				.whenChanged(sum);
 	}

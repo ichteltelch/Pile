@@ -29,7 +29,7 @@ public abstract class RateLimitedValueListener implements ValueListener{
 	public class MultiEvent{
 		HashSet<Object> sources;
 		public MultiEvent(Set<? extends Object> sources) {
-			this.sources=sources.contains(null)?null:new HashSet<>(sources);	
+			this.sources=sources==null || sources.contains(null)?null:new HashSet<>(sources);	
 		}
 		/**
 		 * Query whether the given object is considered a source for this event.

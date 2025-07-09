@@ -848,6 +848,24 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 				.dynamicDependencies()
 				.scoutIfInvalid(ifNull, ifTrue, ifFalse)
 				.name(name)
+				.corrector((E v)->{
+					if(!chooser.isValid()) {
+						return v;
+					}
+					Boolean choice = chooser.get();
+					WriteValue<E> chosen;
+					if(choice==null) {
+						chosen=ifNull;
+					}else if(choice){
+						chosen=ifTrue;
+					}else {
+						chosen=ifFalse;
+					}
+					
+					E ret = chosen.applyCorrection(v);
+					return ret;
+
+				})
 				.seal(v->{
 					if(!chooser.isValid()) {
 						return;

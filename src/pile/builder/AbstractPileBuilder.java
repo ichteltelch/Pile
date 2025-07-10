@@ -52,7 +52,7 @@ implements IPileBuilder<Self, V, E>{
 	long delay = -1;
 	private Consumer<? super E> failHandler;
 	private Predicate<? super Dependency> dependenciesThatTriggerScouting;
-	boolean logAllExceptions;
+	boolean logAllExceptions = true;
 	ExecutorService exec;
 
 	private boolean dynamicDependencies;

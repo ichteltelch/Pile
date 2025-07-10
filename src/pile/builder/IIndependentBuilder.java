@@ -1,6 +1,7 @@
 package pile.builder;
 
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
@@ -9,7 +10,6 @@ import pile.aspect.ReadValue;
 import pile.aspect.ReadValue.InvalidValueException;
 import pile.aspect.bracket.HasBrackets;
 import pile.aspect.bracket.ValueBracket;
-import pile.aspect.WriteValue;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteListenValue;
@@ -231,13 +231,17 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 	 * @param follower
 	 * @return
 	 */
-	public default Self setupWritableValidBuffer(ReadWriteListenValue<E> leader){
+	public default Self setupWritableValidBuffer(
+			ReadWriteListenValue<E> leader,
+			Function<Consumer<? super E>, Consumer<? super E>> deferWrites
+			){
 		V follower = valueBeingBuilt();
 		if(follower.dependencyName()=="?")
 			follower.setName("last valid ("+leader.dependencyName()+")");
 		if(follower.owner==null)
 			follower.owner=leader;
-		WriteValue<? super E> followerSetter = follower.makeSetter();
+		Consumer<? super E> leaderSetter = deferWrites==null?leader:deferWrites.apply(leader);
+		Consumer<? super E> followerSetter = follower.makeSetter();
 		WeakCleanupWithRunnable<Consumer<? super E>> followerRef = new WeakCleanupWithRunnable<>(followerSetter, null);
 
 		ValueListener cl=e->{
@@ -269,7 +273,8 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 		return seal(newValue->{
 			E oldValue=follower.get();
 			if(oldValue!=newValue) {
-				followerSetter.set(leader.set(newValue));
+				leaderSetter.accept(newValue);
+				leader.doOnceWhenValid(setValue -> followerSetter.accept(setValue));
 			}else if(!leader.isValid()) {
 				newValue = leader.set(newValue);
 				if(newValue != oldValue)

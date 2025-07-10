@@ -2709,23 +2709,46 @@ public class Piles {
 
 	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
 	public static <E> Independent<E> writableValidBuffer(ReadWriteListenValue<E> leader){
-		return Piles.<E>ib().setupWritableValidBuffer(leader).build();
+		return Piles.<E>ib().setupWritableValidBuffer(leader, null).build();
 	}
 	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
 	public static IndependentBool writableValidBufferBool(ReadWriteListenValue<Boolean> leader){
-		return PileBool.ib().setupValidBuffer(leader).build();
+		return PileBool.ib().setupWritableValidBuffer(leader, null).build();
 	}
 	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
 	public static IndependentInt writableValidBufferInt(ReadWriteListenValue<Integer> leader){
-		return PileInt.ib().setupWritableValidBuffer(leader).build();
+		return PileInt.ib().setupWritableValidBuffer(leader, null).build();
 	}
 	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
 	public static IndependentDouble writableValidBufferDouble(ReadWriteListenValue<Double> leader){
-		return PileDouble.ib().setupWritableValidBuffer(leader).build();
+		return PileDouble.ib().setupWritableValidBuffer(leader, null).build();
 	}
 	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
 	public static IndependentString writableValidBufferString(ReadWriteListenValue<String> leader){
-		return PileString.ib().setupWritableValidBuffer(leader).build();
+		return PileString.ib().setupWritableValidBuffer(leader, null).build();
+	}
+	
+	
+	/** @param defer 
+	 * @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
+	public static <E> Independent<E> writableValidBuffer(ReadWriteListenValue<E> leader, Function<Consumer<? super E>, Consumer<? super E>> defer){
+		return Piles.<E>ib().setupWritableValidBuffer(leader, defer).build();
+	}
+	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
+	public static IndependentBool writableValidBufferBool(ReadWriteListenValue<Boolean> leader, Function<Consumer<? super Boolean>, Consumer<? super Boolean>> defer){
+		return PileBool.ib().setupWritableValidBuffer(leader, defer).build();
+	}
+	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
+	public static IndependentInt writableValidBufferInt(ReadWriteListenValue<Integer> leader, Function<Consumer<? super Integer>, Consumer<? super Integer>> defer){
+		return PileInt.ib().setupWritableValidBuffer(leader, defer).build();
+	}
+	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
+	public static IndependentDouble writableValidBufferDouble(ReadWriteListenValue<Double> leader, Function<Consumer<? super Double>, Consumer<? super Double>> defer){
+		return PileDouble.ib().setupWritableValidBuffer(leader, defer).build();
+	}
+	/** @see IIndependentBuilder#setupWritableValidBuffer(ReadListenValue) */
+	public static IndependentString writableValidBufferString(ReadWriteListenValue<String> leader, Function<Consumer<? super String>, Consumer<? super String>> defer){
+		return PileString.ib().setupWritableValidBuffer(leader, defer).build();
 	}
 	
 	

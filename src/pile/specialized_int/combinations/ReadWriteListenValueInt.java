@@ -1,5 +1,8 @@
 package pile.specialized_int.combinations;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import pile.builder.IndependentBuilder;
 import pile.builder.SealPileBuilder;
 import pile.specialized_Comparable.combinations.ReadWriteListenValueComparable;
@@ -24,7 +27,9 @@ ReadWriteListenValueComparable<Integer>
 	@Override public default IndependentInt validBuffer(){return writableValidBuffer();}
 	@Override public default IndependentBuilder<IndependentInt, Integer> validBufferBuilder() {return writableValidBufferBuilder();}
 	@Override public default IndependentInt writableValidBuffer() {return writableValidBufferBuilder().build();}
-	@Override public default IndependentBuilder<IndependentInt, Integer> writableValidBufferBuilder() {return PileInt.ib().setupWritableValidBuffer(this);}
+	@Override public default IndependentInt writableValidBuffer(Function<Consumer<? super Integer>, Consumer<? super Integer>> defer) {return writableValidBufferBuilder(defer).build();}
+	@Override public default IndependentBuilder<IndependentInt, Integer> writableValidBufferBuilder() {return PileInt.ib().setupWritableValidBuffer(this, null);}
+	@Override public default IndependentBuilder<IndependentInt, Integer> writableValidBufferBuilder(Function<Consumer<? super Integer>, Consumer<? super Integer>> defer) {return PileInt.ib().setupWritableValidBuffer(this, defer);}
 
 	
 	@Override public default SealInt buffer(){return writableBuffer();}

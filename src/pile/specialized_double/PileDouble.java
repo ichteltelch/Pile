@@ -873,11 +873,12 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 			Objects.requireNonNull(o);
 		ReadListenDependencyDouble sum = sum(items);
 		return Piles.sealed(sum.get())
-				.recompute(()->{
+				.recompute(reco->{
 					Double s = sum.get();
 					if(s==null)
-						return s;
-					return s/items.length;
+						reco.fulfillInvalid();
+					else
+						reco.fulfill(s/items.length);
 				})
 				.sealWithSetter((setter, v)->{
 					Double s = sum.get();
@@ -901,6 +902,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 					if(s!=null)
 						setter.set(s/items.length);
 				})
+				.name("sum")
 				.whenChanged(sum);
 	}
 

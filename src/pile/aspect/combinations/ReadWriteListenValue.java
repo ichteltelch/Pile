@@ -1,5 +1,8 @@
 package pile.aspect.combinations;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import pile.aspect.ReadValue;
 import pile.aspect.WriteValue;
 import pile.aspect.listen.ListenValue;
@@ -45,7 +48,9 @@ public interface ReadWriteListenValue<E> extends ReadListenValue<E>, ReadWriteVa
 	@Override public default Independent<E> validBuffer(){return writableValidBuffer();}
 	@Override public default IndependentBuilder<? extends Independent<E>, E> validBufferBuilder() {return writableValidBufferBuilder();}
 	public default Independent<E> writableValidBuffer() {return writableValidBufferBuilder().build();}
-	public default IndependentBuilder<? extends Independent<E>, E> writableValidBufferBuilder() {return Piles.<E>ib().setupWritableValidBuffer(this);}
+	public default Independent<E> writableValidBuffer(Function<Consumer<? super E>, Consumer<? super E>> defer) {return writableValidBufferBuilder(defer).build();}
+	public default IndependentBuilder<? extends Independent<E>, E> writableValidBufferBuilder() {return Piles.<E>ib().setupWritableValidBuffer(this, null);}
+	public default IndependentBuilder<? extends Independent<E>, E> writableValidBufferBuilder(Function<Consumer<? super E>, Consumer<? super E>> defer) {return Piles.<E>ib().setupWritableValidBuffer(this, defer);}
 
 	
 	

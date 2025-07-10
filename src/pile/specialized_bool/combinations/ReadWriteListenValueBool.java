@@ -1,5 +1,8 @@
 package pile.specialized_bool.combinations;
 
+import java.util.function.Consumer;
+import java.util.function.Function;
+
 import pile.aspect.combinations.ReadWriteListenValue;
 import pile.builder.IndependentBuilder;
 import pile.builder.SealPileBuilder;
@@ -24,7 +27,9 @@ ReadWriteListenValue<Boolean>
 	@Override public default IndependentBool validBuffer(){return writableValidBuffer();}
 	@Override public default IndependentBuilder<IndependentBool, Boolean> validBufferBuilder() {return writableValidBufferBuilder();}
 	@Override public default IndependentBool writableValidBuffer() {return writableValidBufferBuilder().build();}
-	@Override public default IndependentBuilder<IndependentBool, Boolean> writableValidBufferBuilder() {return PileBool.ib().setupWritableValidBuffer(this);}
+	@Override public default IndependentBool writableValidBuffer(Function<Consumer<? super Boolean>, Consumer<? super Boolean>> defer) {return writableValidBufferBuilder(defer).build();}
+	@Override public default IndependentBuilder<IndependentBool, Boolean> writableValidBufferBuilder() {return PileBool.ib().setupWritableValidBuffer(this, null);}
+	@Override public default IndependentBuilder<IndependentBool, Boolean> writableValidBufferBuilder(Function<Consumer<? super Boolean>, Consumer<? super Boolean>> defer) {return PileBool.ib().setupWritableValidBuffer(this, defer);}
 
 	
 	@Override public default SealBool buffer(){return writableBuffer();}

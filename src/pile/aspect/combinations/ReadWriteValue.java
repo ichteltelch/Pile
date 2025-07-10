@@ -43,6 +43,7 @@ public interface ReadWriteValue<E> extends ReadValue<E>, WriteValue<E>, Prosumer
 		}
 		ReadListenDependencyBool valid = validity();
 		ValueListener vl = new ValueListener() {
+			boolean readding;
 			@Override
 			public void valueChanged(ValueEvent e) {
 				if(isValid()) {
@@ -51,6 +52,14 @@ public interface ReadWriteValue<E> extends ReadValue<E>, WriteValue<E>, Prosumer
 						valid.removeValueListener(this);
 						what.accept(v);
 						return;
+					}catch(PleaseReAdd x) {
+						if(readding) {
+							valid.addValueListener(this);
+						}else {
+							readding = true;
+							valid.addValueListener_(this);
+							readding = false;
+						}
 					}catch(InvalidValueException x) {
 						// Value was invalid after all;
 						//Do not remove the listener, 
@@ -62,5 +71,10 @@ public interface ReadWriteValue<E> extends ReadValue<E>, WriteValue<E>, Prosumer
 		valid.addValueListener_(vl);
 		return vl;
 	}
+	/**
+	 * The handler code may throw this exception to request that
+	 * the {@link ValueListener} be re-added.
+	 */
+	public static class PleaseReAdd extends RuntimeException {}
 	
 }

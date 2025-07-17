@@ -1902,7 +1902,7 @@ public class Piles {
 							current = this.current;
 							currentValidity = this.currentValidity;
 						}
-						if(current!=null && changed.size()==1 && changed.contains(current)) {
+						if(current!=null && changed!=null && changed.size()==1 && changed.contains(current)) {
 							if(currentValidity.isTrue()) {
 								try {
 									//									System.out.println("shortcut 1");

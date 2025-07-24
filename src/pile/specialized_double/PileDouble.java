@@ -274,6 +274,14 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 		return op.bijectToDouble(
 				Bijection.define(o->o==null?null:o.doubleValue()+value, o->o==null?null:o.doubleValue()-value));
 	}
+	
+	public static SealDouble addRW(ReadWriteDependency<Double> op, ReadListenDependency<? extends Number> value) {
+		Independent<? extends Number> v = value.validBuffer_memo();
+		return op.bijectToDouble(
+				Bijection.define(o->o==null?null:o.doubleValue()+v.get().doubleValue(), o->o==null?null:o.doubleValue()-v.get().doubleValue()),
+				v
+				);
+	}
 
 	/** Delegates to {@link #subtractRO(ReadDependency, double)} */
 	public static SealDouble subtract(ReadDependency<? extends Number> op, double value) {
@@ -303,6 +311,13 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 	 */
 	public static SealDouble subtractRW(ReadWriteDependency<Double> op, double value) {
 		return addRW(op, -value);
+	}
+	public static SealDouble subtractRW(ReadWriteDependency<Double> op, ReadListenDependency<? extends Number> value) {
+		Independent<? extends Number> v = value.validBuffer_memo();
+		return op.bijectToDouble(
+				Bijection.define(o->o==null?null:o.doubleValue()-v.get().doubleValue(), o->o==null?null:o.doubleValue()+v.get().doubleValue()),
+				v
+				);
 	}
 	/** Delegates to {@link #subtractRO(double, ReadDependency)} */
 	public static SealDouble subtract(double value, ReadDependency<? extends Number> op) {
@@ -364,6 +379,13 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 		return op.bijectToDouble(
 				Bijection.define(o->o==null?null:o.doubleValue()*value, o->o==null?null:o.doubleValue()/value));
 	}
+	public static SealDouble multiplyRW(ReadWriteDependency<Double> op, ReadListenDependency<? extends Number> value) {
+		Independent<? extends Number> v = value.validBuffer_memo();
+		return op.bijectToDouble(
+				Bijection.define(o->o==null?null:o.doubleValue()*v.get().doubleValue(), o->o==null?null:o.doubleValue()/v.get().doubleValue()),
+				v
+				);
+	}
 	/** Delegates to {@link #divideRO(ReadDependency, double)} */
 	public static SealDouble divide(ReadDependency<? extends Number> op, double value) {
 		return divideRO(op, value);
@@ -392,6 +414,13 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 	 */
 	public static SealDouble divideRW(ReadWriteDependency<Double> op, double value) {
 		return multiplyRO(op, 1/value);
+	}
+	public static SealDouble divideRW(ReadWriteDependency<Double> op, ReadListenDependency<? extends Number> value) {
+		Independent<? extends Number> v = value.validBuffer_memo();
+		return op.bijectToDouble(
+				Bijection.define(o->o==null?null:o.doubleValue()/v.get().doubleValue(), o->o==null?null:o.doubleValue()*v.get().doubleValue()),
+				v
+				);
 	}
 
 	/** Delegates to {@link #divideRO(double, ReadDependency)} */

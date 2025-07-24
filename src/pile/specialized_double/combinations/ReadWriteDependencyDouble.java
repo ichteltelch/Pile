@@ -1,5 +1,6 @@
 package pile.specialized_double.combinations;
 
+import pile.aspect.combinations.ReadListenDependency;
 import pile.specialized_Comparable.combinations.ReadWriteDependencyComparable;
 import pile.specialized_double.PileDouble;
 import pile.specialized_double.SealDouble;
@@ -61,4 +62,39 @@ ReadWriteDependencyComparable<Double>
 	public default SealDouble overRW(double op2) {
 		return PileDouble.divideRW(this, op2);
 	}
+	
+	
+	/** Delegates to {@link PileDouble#addRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble plus(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.addRW(this, op2);
+	}
+	/** Delegates to {@link PileDouble#subtractRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble minus(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.subtractRW(this, op2);
+	}
+	/** Delegates to {@link PileDouble#multiplyRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble times(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.multiplyRW(this, op2);
+	}
+	/** Delegates to {@link PileDouble#divideRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble over(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.divideRW(this, op2);
+	}
+	/** Delegates to {@link PileDouble#addRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble plusRW(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.addRW(this, op2);
+	}
+	/** Delegates to {@link PileDouble#subtractRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble minusRW(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.subtractRW(this, op2);
+	}
+	/** Delegates to {@link PileDouble#multiplyRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble timesRW(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.multiplyRW(this, op2);
+	}
+	/** Delegates to {@link PileDouble#divideRW(pile.aspect.combinations.ReadWriteDependency, ReadListenDependency)} */
+	public default SealDouble overRW(ReadListenDependency<? extends Number> op2) {
+		return PileDouble.divideRW(this, op2);
+	}
+
 }

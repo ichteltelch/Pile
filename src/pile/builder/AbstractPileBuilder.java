@@ -1,6 +1,7 @@
 package pile.builder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -364,7 +365,7 @@ implements IPileBuilder<Self, V, E>{
 
 		private MyRecomputeForDelayed(boolean dynamic, boolean ug, BooleanSupplier delaySwitch, V value,
 				boolean logAllExceptions, long delay, Consumer<? super Recomputation<E>> dreco,
-				ScheduledExecutorService myExec, boolean fov, boolean nullNotInvalid) {
+						ScheduledExecutorService myExec, boolean fov, boolean nullNotInvalid) {
 			super(dynamic, nullNotInvalid);
 			this.ug = ug;
 			this.delaySwitch = delaySwitch;
@@ -424,7 +425,7 @@ implements IPileBuilder<Self, V, E>{
 				}
 			else 
 				runThis.run();
-			
+
 		}
 	}
 	private static final class MyRecomputerFor0Delay<E, V extends PileImpl<?>> extends MyRecomputer<E> {
@@ -494,7 +495,7 @@ implements IPileBuilder<Self, V, E>{
 				}
 			else 
 				runThis.run();
-			
+
 		}
 	}
 	private static final class MyRecomputationForImmediate<E, V extends PileImpl<?>> extends MyRecomputer<E> {
@@ -515,7 +516,7 @@ implements IPileBuilder<Self, V, E>{
 		public void accept(Recomputation<E> re){
 			if(dynamic) re.activateDynamicDependencies();
 			else if(re.isDependencyScout()) {re.fulfillInvalid(); return;}
-			
+
 			String oName1;
 			if(RENAME_RECOMPUTATION_THREADS) {
 				String sName = re.suggestThreadName();
@@ -530,7 +531,7 @@ implements IPileBuilder<Self, V, E>{
 			}
 			try {
 				assert Recomputations.getCurrentRecomputation()==re;
-				
+
 				dreco.accept(re);
 			}catch(FulfillInvalid x) {
 				re.fulfillInvalid();
@@ -552,43 +553,43 @@ implements IPileBuilder<Self, V, E>{
 			}
 		}
 	}
-//	private static final class MyRecomputerForImmediate<E, V extends PileImpl<?>> extends MyRecomputer<E> {
-//		private final V value;
-//		
-//		private final boolean logAllExceptions;
-//		private final Consumer<? super Recomputation<E>> ireco;
-//
-//		public MyRecomputerForImmediate(boolean dynamic, V value, boolean logAllExceptions,
-//				Consumer<? super Recomputation<E>> ireco) {
-//			super(dynamic);
-//			this.value = value;
-//			
-//			this.logAllExceptions = logAllExceptions;
-//			this.ireco = ireco;
-//		}
-//
-//		public void accept(Recomputation<E> re){
-//			if(dynamic) re.activateDynamicDependencies();
-//			else if(re.isDependencyScout()) {re.fulfillInvalid(); return;}
-//
-//			try {
-//				assert Recomputations.getCurrentRecomputation()==re;
-//
-//				ireco.accept(re);
-//			}catch(FulfillInvalid x) {
-//				re.fulfillInvalid();
-//				return;
-//			}catch(Error x) {
-//				log.log(Level.WARNING, "Error in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
-//				throw x;
-//			}catch(Throwable x) {
-//				if(logAllExceptions || re!=null && !re.isFinished())
-//					log.log(Level.WARNING, "Exception in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
-//			}finally {
-//				unfulfilledWarning(value, re);
-//			}
-//		}
-//	}
+	//	private static final class MyRecomputerForImmediate<E, V extends PileImpl<?>> extends MyRecomputer<E> {
+	//		private final V value;
+	//		
+	//		private final boolean logAllExceptions;
+	//		private final Consumer<? super Recomputation<E>> ireco;
+	//
+	//		public MyRecomputerForImmediate(boolean dynamic, V value, boolean logAllExceptions,
+	//				Consumer<? super Recomputation<E>> ireco) {
+	//			super(dynamic);
+	//			this.value = value;
+	//			
+	//			this.logAllExceptions = logAllExceptions;
+	//			this.ireco = ireco;
+	//		}
+	//
+	//		public void accept(Recomputation<E> re){
+	//			if(dynamic) re.activateDynamicDependencies();
+	//			else if(re.isDependencyScout()) {re.fulfillInvalid(); return;}
+	//
+	//			try {
+	//				assert Recomputations.getCurrentRecomputation()==re;
+	//
+	//				ireco.accept(re);
+	//			}catch(FulfillInvalid x) {
+	//				re.fulfillInvalid();
+	//				return;
+	//			}catch(Error x) {
+	//				log.log(Level.WARNING, "Error in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
+	//				throw x;
+	//			}catch(Throwable x) {
+	//				if(logAllExceptions || re!=null && !re.isFinished())
+	//					log.log(Level.WARNING, "Exception in recomputer for "+value.avName+" (finished: "+re.isFinished()+")",	x);
+	//			}finally {
+	//				unfulfilledWarning(value, re);
+	//			}
+	//		}
+	//	}
 
 	static abstract class MyRecomputer<E> implements Recomputer<E>{
 		final boolean dynamic;
@@ -785,14 +786,14 @@ implements IPileBuilder<Self, V, E>{
 	}
 
 	public Self unfulfilledIsInvalid() {
-        nullNotInvalid=false;
+		nullNotInvalid=false;
 		return self();
 	}
 	public Self unfulfilledIsNull() {
 		nullNotInvalid=true;
-        return self();
-    }
-	
+		return self();
+	}
+
 	@Override
 	public Self dependOn(Dependency d) {
 		value.addDependency(d, false);
@@ -812,6 +813,7 @@ implements IPileBuilder<Self, V, E>{
 	}
 	@Override
 	public Self dependOn(boolean essential, Dependency... d) {
+		Dependency[] d2=removeNulls(d);
 		value.addDependency(false, d);
 		if(essential)
 			value.setDependencyEssential(true, d);
@@ -825,6 +827,22 @@ implements IPileBuilder<Self, V, E>{
 	//	}
 
 
+	public static final Dependency[] removeNulls(Dependency[] ds) {
+		int nullCount = 0;
+		for(Dependency d: ds)
+			if(d==null)
+				++nullCount;
+		if(nullCount==0)
+			return ds;
+		Dependency[] ds2;
+		ds2=new Dependency[ds.length-nullCount];
+		int outPosition = 0;
+		for(Dependency d: ds)
+			if(d!=null) {
+				ds2[outPosition++]=d;
+			}
+		return ds2;
+	}
 	ArrayList<ReadListenDependency<? extends E>> upperBounds;
 	ArrayList<ReadListenDependency<? extends E>> lowerBounds;
 	Comparator<? super E> ordering;

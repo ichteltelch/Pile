@@ -274,6 +274,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 			E oldValue=follower.get();
 			if(oldValue!=newValue) {
 				leaderSetter.accept(newValue);
+				followerSetter.accept(newValue);
 				leader.doOnceWhenValid(setValue -> followerSetter.accept(setValue));
 			}else if(!leader.isValid()) {
 				newValue = leader.set(newValue);

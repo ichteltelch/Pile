@@ -1,7 +1,8 @@
 package pile.builder;
 
+import static pile.interop.debug.DebugEnabled.RENAME_RECOMPUTATION_THREADS;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
@@ -18,8 +19,8 @@ import java.util.logging.Logger;
 
 import pile.aspect.Dependency;
 import pile.aspect.Depender;
-import pile.aspect.VetoException;
 import pile.aspect.HasAssociations.NamedAssociationKey;
+import pile.aspect.VetoException;
 import pile.aspect.bracket.ValueBracket;
 import pile.aspect.combinations.ReadListenDependency;
 import pile.aspect.listen.ValueListener;
@@ -33,7 +34,6 @@ import pile.impl.PileImpl;
 import pile.impl.Piles;
 import pile.interop.exec.StandardExecutors;
 import pile.utils.Functional;
-import static pile.interop.debug.DebugEnabled.RENAME_RECOMPUTATION_THREADS;
 
 /**
  * Abstract implementation of {@link IPileBuilder}  
@@ -806,6 +806,8 @@ implements IPileBuilder<Self, V, E>{
 	}
 	@Override
 	public Self dependOn(boolean essential, Dependency d) {
+		if(d==null)
+			return self();
 		value.addDependency(d, false);
 		if(essential)
 			value.setDependencyEssential(true, d);
@@ -814,9 +816,9 @@ implements IPileBuilder<Self, V, E>{
 	@Override
 	public Self dependOn(boolean essential, Dependency... d) {
 		Dependency[] d2=removeNulls(d);
-		value.addDependency(false, d);
+		value.addDependency(false, d2);
 		if(essential)
-			value.setDependencyEssential(true, d);
+			value.setDependencyEssential(true, d2);
 		return self();
 	}
 

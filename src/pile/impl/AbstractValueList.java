@@ -261,6 +261,7 @@ implements Iterable<E>{
 	 * @return
 	 */
 	public ReadWriteListenDependency<E> get(int index){
+		head().recordRead();
 		return elems.get(index);
 	}
 	/**
@@ -268,6 +269,7 @@ implements Iterable<E>{
 	 * @return
 	 */
 	public int size(){
+		head().recordRead();
 		return elems.size();
 	}
 	/**
@@ -437,6 +439,7 @@ implements Iterable<E>{
 	 * @return
 	 */
 	public E getElementAt(int index) {
+		head().recordRead();
 		return get(index).get();
 	}
 

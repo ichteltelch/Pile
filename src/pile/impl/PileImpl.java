@@ -3525,6 +3525,18 @@ implements Pile<E>, HasAssociations.Mixin
 	}
 
 	@Override
+	public void forgetOldValue() {
+		try {
+			ListenValue.DEFER.__incrementSuppressors();		
+			synchronized (mutex) {
+				closeOldBrackets();
+			}
+		}finally {
+			ListenValue.DEFER.__decrementSuppressors();		
+		}
+
+	}
+	@Override
 	public boolean isSealed() {
 		return false;
 	}

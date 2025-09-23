@@ -180,6 +180,7 @@ AutoValidationSuppressible.Single
 		return this;
 	}
 	public Pile<E> setBehaviorDuringTransform(BehaviorDuringTransform b);
+	public void forgetOldValue();
 
 }
 

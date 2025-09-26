@@ -85,7 +85,7 @@ implements Pile<E>, HasAssociations.Mixin
 	volatile boolean lazyValidating;
 
 	BehaviorDuringTransform bdt=BehaviorDuringTransform.NOP;
-	
+
 	public PileImpl<E> setBehaviorDuringTransform(BehaviorDuringTransform b){
 		bdt = b;
 		return this;
@@ -514,7 +514,13 @@ implements Pile<E>, HasAssociations.Mixin
 	 */
 	static final ThreadLocal<MutInt> recomputationDepth = new ThreadLocal<>();
 	private void ___startPendingRecompute(boolean force, boolean _scout) {
-		ListenValue.DEFER.run(()->___startPendingRecompute_undeferred(force, _scout));
+		try {
+			ListenValue.DEFER.run(()->
+			Recomputations.NOT_NOW.run(()->
+			___startPendingRecompute_undeferred(force, _scout))
+					);
+		}finally {
+		}
 	}
 	private void ___startPendingRecompute_undeferred(boolean force, boolean _scout) {
 		final Consumer<? super Recomputation<E>> rc;
@@ -3232,7 +3238,7 @@ implements Pile<E>, HasAssociations.Mixin
 	public void beginTransformTransaction() throws InterruptedException{
 		//		boolean wasOngoing = cancelPendingRecomputation(true);
 
-//		__beginTransaction();
+		//		__beginTransaction();
 		Object tm = getTransformMutex();
 		synchronized (tm) {
 			if(transformTransactions>1)
@@ -3280,7 +3286,7 @@ implements Pile<E>, HasAssociations.Mixin
 			}
 			transformTransactionStarterThread=null;
 		}
-//		__endTransaction();
+		//		__endTransaction();
 		__scheduleRecomputation(false);
 		__startPendingRecompute(false);
 

@@ -5,6 +5,7 @@ import static pile.interop.debug.DebugEnabled.ET_TRACE;
 import static pile.interop.debug.DebugEnabled.lockedValueMutices;
 import static pile.interop.debug.DebugEnabled.traceEnabledFor;
 
+import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
@@ -351,6 +352,39 @@ HasInternalLock
 		}
 		__workInformQueue();
 	}
+
+	static class StackTraceWrapper extends RuntimeException {
+		final StackTraceElement[] st;
+		public StackTraceWrapper(StackTraceElement[] st) {
+			super("(stack trace wrapper)");
+			this.st=st;
+		}
+		@Override
+		public StackTraceElement[] getStackTrace() {
+			return st;
+		}
+		public void printStackTrace() {
+			printStackTrace(System.err);
+		}
+
+		/**
+		 * Prints this throwable and its backtrace to the specified print stream.
+		 *
+		 * @param s {@code PrintStream} to use for output
+		 */
+		public void printStackTrace(PrintStream s) {
+
+
+			synchronized (s) {
+				// Print our stack trace
+				s.println(this);
+				StackTraceElement[] trace = st;
+				for (StackTraceElement traceElement : trace)
+					s.println("\tat " + traceElement);
+
+			}
+		}
+	}
 	/**
 	 * Execute the elements in the {@link #informQueue} until it is empty.
 	 * The current thread must not be in the monitor of {@link #mutex}.
@@ -373,6 +407,7 @@ HasInternalLock
 			return;
 		boolean amRunning = false;
 		try {
+			Recomputations.NOT_NOW.__incrementSuppressors();
 			while(true) {
 				synchronized (informRunnerMutex) {
 					if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
@@ -388,7 +423,7 @@ HasInternalLock
 								//								if(ET_TRACE && traceEnabledFor(this))
 								//									trace("inform queue already running");
 								WaitService.get().wait(informRunnerMutex, (long)(20*Math.exp(2*Math.random()-1)));
-								
+
 								if(someThreadIsWorkingInformQueue==null)
 									break;
 								long timeElapsed=System.currentTimeMillis()-t0;
@@ -401,7 +436,13 @@ HasInternalLock
 									try {
 										throw new RuntimeException("Stack trace");
 									}catch(RuntimeException x) {
-										log.log(Level.WARNING, "Likely informQueue deadlock involving "+avName+" in Thread "+Thread.currentThread().getName(), x);
+										log.log(Level.WARNING, "Likely informQueue deadlock involving "+avName+" in Thread "+Thread.currentThread().getName()
+												+" conflicting with Thread "+someThreadIsWorkingInformQueue.getName(), x);
+										StackTraceElement[] st = someThreadIsWorkingInformQueue.getStackTrace();
+
+										log.log(Level.WARNING, "Stack trace in conflicting thread "+someThreadIsWorkingInformQueue.getName(), 
+												new StackTraceWrapper(st));
+
 									}		
 								}
 								if(timeElapsed>backOffTime*2) {
@@ -472,14 +513,18 @@ HasInternalLock
 				}
 			}
 		}finally {
-			assert !amRunning;
-			if(amRunning) {
-				synchronized (informRunnerMutex) {
-					amRunning=false;
-					assert someThreadIsWorkingInformQueue==Thread.currentThread();
-					someThreadIsWorkingInformQueue=null;
-					WaitService.get().notifyAll(informRunnerMutex);
-				}	
+			try {
+				assert !amRunning;
+				if(amRunning) {
+					synchronized (informRunnerMutex) {
+						amRunning=false;
+						assert someThreadIsWorkingInformQueue==Thread.currentThread();
+						someThreadIsWorkingInformQueue=null;
+						WaitService.get().notifyAll(informRunnerMutex);
+					}	
+				}
+			}finally {
+				Recomputations.NOT_NOW.__decrementSuppressors();
 			}
 		}
 	}
@@ -820,12 +865,12 @@ HasInternalLock
 
 				}
 				assert !Thread.holdsLock(mutex);
+				__workInformQueue();
 			}finally {
 				ListenValue.DEFER.__decrementSuppressors();
 			}
 
 
-			__workInformQueue();
 			if((!startRecomputation && changed) || becameLongTermValid) {
 				fireValueChange();
 				becameLongTermValid=false;

@@ -16,7 +16,9 @@ public class DefererImpl implements Deferrer {
 	ArrayList<Throwable> trace = DEBUG? new ArrayList<Throwable>() : null;
 	
 	protected void runDeferredIfNotDeferring() {
-		if(shouldBeDeferring==0 && !isQueueEmpty()) {
+		if(isQueueEmpty())
+			return;
+		if(shouldBeDeferring==0 && hasStartedRunningDeferred==0 && !isQueueEmpty()) {
 			try {
 				hasStartedRunningDeferred++;
 				while(shouldBeDeferring==0) {
@@ -52,7 +54,13 @@ public class DefererImpl implements Deferrer {
 			runDeferredIfNotDeferring();
 			return;
 		}
-		StandardExecutors.safe(r);
+		try {
+			hasStartedRunningDeferred++;
+			StandardExecutors.safe(r);
+		}finally {
+			hasStartedRunningDeferred--;
+			runDeferredIfNotDeferring();
+		}
 	}
 
 

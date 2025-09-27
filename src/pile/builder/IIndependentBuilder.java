@@ -217,7 +217,6 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 		return seal();
 	}
 
-
 	/**
 	 * Configures a given {@link Independent} instance to be a read-write "valid buffer".
 	 * It is always valid and reflects the last valid value of the leader value.
@@ -228,7 +227,22 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 	 * @param <V>
 	 * @param <E>
 	 * @param leader
-	 * @param follower
+	 * @return
+	 */
+	public default Self setupWritableValidBuffer(ReadWriteListenValue<E> leader) {
+		return setupWritableValidBuffer(leader, null);
+	}
+	/**
+	 * Configures a given {@link Independent} instance to be a read-write "valid buffer".
+	 * It is always valid and reflects the last valid value of the leader value.
+	 * This is achieved by means of a {@link ValueListener} that keeps no strong references to the
+	 * valid buffer. The valid buffer keeps a strong reference to 
+	 * its leader in its {@link AbstractReadListenDependency#owner owner} field.
+	 * Writes to the buffer will first change the leader, then the buffer.
+	 * @param <V>
+	 * @param <E>
+	 * @param leader
+	 * @param deferWrites a function that takes the leader's setter and returns a new setter that possible executes writes later or in a different thread.
 	 * @return
 	 */
 	public default Self setupWritableValidBuffer(

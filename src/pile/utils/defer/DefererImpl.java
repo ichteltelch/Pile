@@ -16,8 +16,6 @@ public class DefererImpl implements Deferrer {
 	ArrayList<Throwable> trace = DEBUG? new ArrayList<Throwable>() : null;
 	
 	protected void runDeferredIfNotDeferring() {
-		if(isQueueEmpty())
-			return;
 		if(shouldBeDeferring==0 && hasStartedRunningDeferred==0 && !isQueueEmpty()) {
 			try {
 				hasStartedRunningDeferred++;

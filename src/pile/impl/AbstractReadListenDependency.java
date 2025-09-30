@@ -240,6 +240,12 @@ HasInternalLock
 	 * of modify it after this {@link AbstractReadListenDependency} has been created and configured.
 	 */
 	public Object owner;
+	
+	boolean isDeferringListeners = false;
+	
+	public void _setDeferringListeners(boolean b) {
+		isDeferringListeners = b;
+	}
 
 	@Override
 	public ListenerManager _getListenerManager() {
@@ -250,7 +256,10 @@ HasInternalLock
 				if (localRef == null) {
 					listeners = localRef = new ListenerManager(this) {
 						public void fireValueChange(ValueEvent e) {
-							ListenValue.DEFER.run(()->super.fireValueChange(e));
+							if(isDeferringListeners)
+								ListenValue.DEFER.run(()->super.fireValueChange(e));
+							else
+								super.fireValueChange(e);
 						}
 					};
 				}

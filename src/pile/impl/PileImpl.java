@@ -512,14 +512,23 @@ implements Pile<E>, HasAssociations.Mixin
 	 * This tracks how deeply calls to _startRecomputation are nested and logs a warning if it becomes too deep
 	 * TODO: Make this a debugging feature not enabled by default
 	 */
+	boolean deferringRecomputations;
+	public void _setDeferringRecomputations(boolean b) {
+		deferringRecomputations = b;
+	}
 	static final ThreadLocal<MutInt> recomputationDepth = new ThreadLocal<>();
 	private void ___startPendingRecompute(boolean force, boolean _scout) {
-		try {
-			ListenValue.DEFER.run(()->
-			Recomputations.NOT_NOW.run(()->
-			___startPendingRecompute_undeferred(force, _scout))
-					);
-		}finally {
+		if(deferringRecomputations) {
+			try {
+	//			ListenValue.DEFER.run(()->
+				Recomputations.NOT_NOW.run(()->
+				___startPendingRecompute_undeferred(force, _scout)
+	//			)
+						);
+			}finally {
+			}
+		}else {
+			___startPendingRecompute_undeferred(force, _scout);
 		}
 	}
 	private void ___startPendingRecompute_undeferred(boolean force, boolean _scout) {

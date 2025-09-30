@@ -283,7 +283,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 		follower._addCorrector(leader::applyCorrection);
 
 
-		cl.runImmediately();
+		cl.runImmediately(true);
 		return seal(newValue->{
 			E oldValue=follower.get();
 			if(oldValue!=newValue) {

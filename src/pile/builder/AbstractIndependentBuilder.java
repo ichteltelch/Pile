@@ -228,7 +228,11 @@ implements IIndependentBuilder<Self, V, E>{
 		dob=false;
 		return self();
 	}
-
+	@Override
+	public Self deferListeners(boolean b) {
+		value._setDeferringListeners(b);
+		return self();
+	}
 	
 }
 	

@@ -51,4 +51,12 @@ public interface IBuilder<Self extends IBuilder<Self, V>, V> {
 		WeakCleanup.runIfWeak(valueBeingBuilt(), run);
 		return self();
 	}
+	
+	public Self deferListeners(boolean b);
+	public default Self deferListeners() {
+		return deferListeners(true);
+	}
+	public default Self dontDeferListeners() {
+		return deferListeners(false);
+	}
 }

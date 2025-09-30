@@ -121,8 +121,15 @@ implements IPileBuilder<Self, V, E>{
 	}
 	BiPredicate<? super Dependency, ? super Depender> mayRemoveDynamicDependency; 
 
+	public Self deferRecomputations() {
+		value._setDeferringRecomputations(true);
+		return self();
+	}
 
-
+	public Self deferRecomputations(boolean b) {
+		value._setDeferringRecomputations(b);
+		return self();
+	}
 	boolean unfullfilledGuard=true;
 	private static final class MyRecomputerForStaged<E, V extends PileImpl<?>> extends MyRecomputer<E> {
 		private final ScheduledExecutorService myExec;
@@ -987,6 +994,11 @@ implements IPileBuilder<Self, V, E>{
 		if(this.delaySwitch==null)
 			this.delaySwitch=new ArrayList<>(2);
 		this.delaySwitch.add(delaySwitch);
+		return self();
+	}
+	@Override
+	public Self deferListeners(boolean b) {
+		value._setDeferringListeners(b);
 		return self();
 	}
 

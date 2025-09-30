@@ -845,6 +845,8 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 					}
 
 				})
+				.deferRecomputations()
+				.deferListeners()
 				.dynamicDependencies()
 				.scoutIfInvalid(ifNull, ifTrue, ifFalse)
 				.name(name)

@@ -167,7 +167,9 @@ AlwaysValid<T>
 		this.files = file.<List<Path>>map(SynchronizingFilesBackedValue::canonicalize, b->b.corrector(this::restoreFromTmpFiles));
 		this.defaultValue = defaultValue;
 		fileListenerWeakHandle = file.addWeakValueListener(fileListener);
-		read();
+		files.doOnceWhenValid(x->read());
+//		Recomputations.NOT_NOW.run(this::read);
+		
 
 	}
 	public static <T> SynchronizingFilesBackedValue<T> forSingleFile(
@@ -331,6 +333,8 @@ AlwaysValid<T>
 		return true;
 	}
 	private Path newest(List<Path> fs, Predicate<? super Path> filter) {
+		if(fs==null)
+			return null;
 		Path newest = null;
 		long newestTime = Long.MIN_VALUE;
 		for(Path p : fs) {

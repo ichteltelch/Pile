@@ -64,12 +64,16 @@ public class MultiSourceIntegrator<T> {
 		Object target = target();
 		if(target!=null) {
 			monotonous__.set(set.contains(target));
-			sourceListener.runImmediately();
+			monotonous.doOnceWhenValid(x->sourceListener.runImmediately());
+			//Recomputations.NOT_NOW.run(sourceListener::runImmediately);
 		}
 	}, set->{
 		for(ListenValue l: set)
 			l.removeWeakValueListener(sourceListener);
-	}).defer(ListenValue.DEFER).nopOnNull())
+	})
+			.defer(ListenValue.DEFER)
+			
+			.nopOnNull())
 	.build();
 
 

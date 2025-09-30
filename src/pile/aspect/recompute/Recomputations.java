@@ -303,6 +303,7 @@ public class Recomputations {
 	suspendedRecomputationsRequests = new ThreadLocal<>();
 
 	public static final Deferrer NOT_NOW = Deferrer.makeThreadLocal(DeferrerQueue.FiFo::new);
+//	public static final Deferrer NOT_NOW = ListenValue.DEFER;
 
 
 	/**

@@ -31,6 +31,16 @@ final class PrioWrappedValueListener implements ValueListener {
 	}
 
 	@Override
+	public void runImmediately() {
+		back.runImmediately();
+	}
+	
+	@Override
+	public void runImmediately(boolean inThisThread) {
+		back.runImmediately(inThisThread);
+	}
+	
+	@Override
 	public ValueListener withPrio(int prio) {
 		return back.withPrio(prio);
 	}

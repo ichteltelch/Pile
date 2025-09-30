@@ -38,7 +38,7 @@ public interface ListenValue {
 	 */
 	public default void addValueListener_(ValueListener cl) {
 		addValueListener(cl);
-		cl.valueChanged(null);
+		cl.runImmediately();
 	}
 	/**
 	 * Remove a {@link ValueListener} that was to be run immediately

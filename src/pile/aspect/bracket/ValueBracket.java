@@ -293,7 +293,7 @@ public interface ValueBracket<E, O> {
 			@Override
 			public boolean open(Object value, ListenValue owner) {
 				owner.addValueListener(l);
-				l.valueChanged(null);
+				l.runImmediately(true);
 				return true;
 			}
 

@@ -150,6 +150,6 @@ public class ImplSwitchableRelation implements SwitchableRelation<ReadListenValu
 				removeHandle=sbe.addWeakValueListener(sbeChanged);
 			}
 		}
-		sbeChanged.valueChanged(null);
+		sbeChanged.runImmediately(true);
 	}
 }

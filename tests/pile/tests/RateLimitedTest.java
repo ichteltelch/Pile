@@ -56,7 +56,7 @@ public class RateLimitedTest {
 		for(int i=0; i<300; ++i) {
 			v1.set(v1.get()+1);
 			//v2.set(v2.get()+1);
-//			ml.valueChanged(null);
+//			ml.runImmediately(true);
 			Thread.sleep(10);
 		}
 	}

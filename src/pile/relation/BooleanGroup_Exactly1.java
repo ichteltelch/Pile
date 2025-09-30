@@ -101,7 +101,7 @@ public class BooleanGroup_Exactly1 {
 			items.put(elem,  cl);
 			elem.addValueListener(cl);
 		};
-		cl.valueChanged(null);
+		cl.runImmediately(true);
 	}
 	/**
 	 * Remove an item. If it was <code>true</code>, i.e. the active item of the group,

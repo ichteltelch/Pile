@@ -557,7 +557,7 @@ implements Pile<E>, HasAssociations.Mixin
 
 				return;
 			}
-			if(!force && autoValidationSuppressors>0) {
+			if(!scout && !force && autoValidationSuppressors>0) {
 				if(ET_TRACE && traceEnabledFor(this))trace("recomputation not started: autovalidation supressed");
 
 				return;
@@ -1137,7 +1137,7 @@ implements Pile<E>, HasAssociations.Mixin
 				//workInformQueue(); not necessary; is done by deactivate
 				if(restart) {
 					outer.__scheduleRecomputation(false, false);
-					outer.__startPendingRecompute(true, false);
+					outer.__startPendingRecompute(false, false);
 				}
 				synchronized (outer.mutex) {--outer.fulfillNesting;}
 
@@ -1827,7 +1827,7 @@ implements Pile<E>, HasAssociations.Mixin
 			}
 			if(scout) {
 				__scheduleRecomputation(true, true);
-				__startPendingRecompute(true, true);
+				__startPendingRecompute(false, true);
 			}else if(changed) {
 				__scheduleRecomputation(true);
 			}
@@ -2089,7 +2089,7 @@ implements Pile<E>, HasAssociations.Mixin
 
 			if(recompute!=null && recompute.useDependencyScouting()) {
 				__scheduleRecomputation(false, true);
-				__startPendingRecompute(true, true);
+				__startPendingRecompute(false, true);
 			}
 			synchronized (mutex) {
 				invalidated=true;
@@ -2219,7 +2219,7 @@ implements Pile<E>, HasAssociations.Mixin
 				revalidate();
 			else if(recompute!=null && recompute.useDependencyScouting()) {
 				__scheduleRecomputation(false, true);
-				__startPendingRecompute(true, true);
+				__startPendingRecompute(false, true);
 			}
 
 			return get();
@@ -2254,7 +2254,7 @@ implements Pile<E>, HasAssociations.Mixin
 					openOldBrackets();
 				}
 				__scheduleRecomputation(false, true);
-				__startPendingRecompute(true, true);
+				__startPendingRecompute(false, true);
 			}				
 			fireDeepRevalidateOnSet();
 			boolean needDeepRevalidate;

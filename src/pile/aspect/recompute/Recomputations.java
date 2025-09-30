@@ -7,6 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import pile.aspect.Dependency;
+import pile.aspect.listen.ListenValue;
 import pile.aspect.suppress.MockBlock;
 import pile.utils.defer.Deferrer;
 import pile.utils.defer.DeferrerQueue;
@@ -302,8 +303,8 @@ public class Recomputations {
 	private static final ThreadLocal<ArrayList<Runnable>> 
 	suspendedRecomputationsRequests = new ThreadLocal<>();
 
-	public static final Deferrer NOT_NOW = Deferrer.makeThreadLocal(DeferrerQueue.FiFo::new);
-//	public static final Deferrer NOT_NOW = ListenValue.DEFER;
+//	public static final Deferrer NOT_NOW = Deferrer.makeThreadLocal(DeferrerQueue.FiFo::new);
+	public static final Deferrer NOT_NOW = ListenValue.DEFER;
 
 
 	/**

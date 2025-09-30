@@ -59,7 +59,7 @@ public class BooleanGroup_Max1 {
 			if(callback!=null)
 				callback.run();
 		};
-		cl.valueChanged(null);
+		cl.runImmediately(true);
 	}
 	/**
 	 * Remove an item. If it was <code>true</code>, i.e. the active item of the group,

@@ -496,7 +496,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 		follower._addCorrector(leader::applyCorrection);
 
 
-		cl.valueChanged(null);
+		cl.runImmediately(true);
 
 		return seal(newValue->{
 			followerSetter.set(leader.set(newValue));
@@ -560,7 +560,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 		follower._setEquivalence(leader._getEquivalence());
 
 
-		cl.valueChanged(null);
+		cl.runImmediately(true);
 
 		
 
@@ -635,7 +635,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 		follower._addCorrector(leader::applyCorrection);
 
 
-		cl.valueChanged(null);
+		cl.runImmediately(true);
 		return seal(newValue->{
 			followerSetter.set(leader.set(newValue));
 		}, false);
@@ -702,7 +702,7 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 		follower._setEquivalence(leader._getEquivalence());
 	
 	
-		cl.valueChanged(null);
+		cl.runImmediately(true);
 		return seal();
 	}
 	/**

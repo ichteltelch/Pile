@@ -62,5 +62,17 @@ public class WeakValueListener extends WeakCleanup<ValueListener> implements Val
 	public WeakValueListener asWeakValueListener() {
 		return this;
 	}
+	@Override
+	public void runImmediately() {
+		ValueListener g = get();
+		if(g!=null)
+			g.runImmediately();
+	}
+	@Override
+	public void runImmediately(boolean inThisThread) {
+		ValueListener g = get();
+		if(g!=null)
+			g.runImmediately(inThisThread);
+	}
 
 }

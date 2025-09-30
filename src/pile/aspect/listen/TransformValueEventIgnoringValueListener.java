@@ -18,6 +18,14 @@ final class TransformValueEventIgnoringValueListener implements ValueListener {
 			self.valueChanged(e);
 	}
 	@Override
+	public void runImmediately(boolean inThisThread) {
+		self.runImmediately(inThisThread);
+	}
+	@Override
+	public void runImmediately() {
+		self.runImmediately();
+	}
+	@Override
 	public int priority() {
 		return self.priority();
 	}

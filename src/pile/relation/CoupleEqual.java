@@ -111,7 +111,7 @@ public class CoupleEqual<E> extends AbstractRelation{
 		removeFromOp2=op2.addWeakValueListener(vl);
 
 		if(initSync)
-			vl.valueChanged(null);
+			vl.runImmediately(true);
 	}
 	@Override
 	public void destroy() {

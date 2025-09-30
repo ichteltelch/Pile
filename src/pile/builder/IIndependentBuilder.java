@@ -213,7 +213,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 		follower._setEquivalence(leader._getEquivalence());
 
 		//		leader.syncWithInternalMutex();
-		cl.valueChanged(null);
+		cl.runImmediately();
 		return seal();
 	}
 
@@ -283,7 +283,7 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 		follower._addCorrector(leader::applyCorrection);
 
 
-		cl.valueChanged(null);
+		cl.runImmediately();
 		return seal(newValue->{
 			E oldValue=follower.get();
 			if(oldValue!=newValue) {

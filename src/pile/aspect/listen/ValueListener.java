@@ -177,9 +177,19 @@ public interface ValueListener {
 		return null;
 	}
 	/**
-	 * Run this {@link ValueListener} immediately with a <code>null</code> event.
+	 * Run this {@link ValueListener} immediately with a <code>null</code> event, and in another thread
 	 */
 	default void runImmediately() {
-		valueChanged(null);
+		runImmediately(false);
+	}
+	/**
+	 * Run this {@link ValueListener} immediately with a <code>null</code> event.
+	 */
+	default void runImmediately(boolean inThisThread) {
+		if(inThisThread) {
+			valueChanged(null);
+		} else {
+			StandardExecutors.unlimited().execute(()->valueChanged(null) );
+		}
 	}
 }

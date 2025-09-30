@@ -13,11 +13,11 @@ public abstract class AbstractRelation {
 		if(isEnabled()!=Piles.TRUE) {
 			isEnabled().addValueListener(e->{
 				if(!shouldActOnlyOnOperandChanges())
-					vl.valueChanged(null);	
+					vl.runImmediately();
 			});
 		}
 		if(isEnabled().isTrue() && !shouldActOnlyOnOperandChanges())
-			vl.valueChanged(null);
+			vl.runImmediately();
 	}
 	
 	

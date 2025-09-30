@@ -64,10 +64,10 @@ public class Implication extends AbstractRelation{
 		if(isEnabled()!=Piles.TRUE) {
 			isEnabled().addValueListener(e->{
 				if(!shouldActOnlyOnOperandChanges())
-					vl.valueChanged(null);	
+					vl.runImmediately(true);	
 			});
 		}
-		vl.valueChanged(null);
+		vl.runImmediately(true);
 	}
 	@Override
 	public void destroy() {

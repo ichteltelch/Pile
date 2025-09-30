@@ -259,6 +259,12 @@ public abstract class RateLimitedValueListener implements ValueListener{
 		
 		}
 	}
+	public void runImmediately(boolean inThisThread) {
+		if(inThisThread)
+			runImmediately();
+		else
+			StandardExecutors.unlimited().execute(this::runImmediately);
+	}
 	/**
 	 * The handler method
 	 * @param e
@@ -318,6 +324,7 @@ public abstract class RateLimitedValueListener implements ValueListener{
 			}
 		};
 	}
+	
 	/**
 	 * Break this {@link RateLimitedValueListener}: Events will be handled immediately in the same thread.
 	 * This is meant for debugging to find out what's wrong with event handler code.

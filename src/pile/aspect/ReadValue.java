@@ -1,9 +1,13 @@
 package pile.aspect;
 
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import pile.aspect.combinations.ReadListenDependency;
+import pile.aspect.combinations.ReadWriteValue.PleaseReAdd;
+import pile.aspect.listen.ValueEvent;
+import pile.aspect.listen.ValueListener;
 import pile.aspect.recompute.DependencyRecorder;
 import pile.aspect.recompute.Recomputation;
 import pile.interop.wait.WaitService;
@@ -254,5 +258,52 @@ public interface ReadValue<E> extends Supplier<E>, DoesTransactions{
 	 */
 	public boolean isValidAsync();
 	
+	/**
+	 * Does something as soon as this value is valid
+	 * @param what Some function to call when the value is valid. Will be called with wrapped value.
+	 * @return <code>null</code> if the value was valid and the think could be done immediately.
+	 * Otherwise, returns a {@link ValueListener} that you can remove to cancel the action.
+	 */
+	public default ValueListener doOnceWhenValid(Consumer<? super E> what) {
+
+		if(isValid()) {
+			try {
+				E v = getValidOrThrow();
+				what.accept(v);
+				return null;
+			}catch(InvalidValueException e) {
+				// Value was invalid after all
+			}
+		}
+		ReadListenDependencyBool valid = validity();
+		ValueListener vl = new ValueListener() {
+			boolean readding;
+			@Override
+			public void valueChanged(ValueEvent e) {
+				if(isValid()) {
+					try {
+						E v = getValidOrThrow();
+						valid.removeValueListener(this);
+						what.accept(v);
+						return;
+					}catch(PleaseReAdd x) {
+						if(readding) {
+							valid.addValueListener(this);
+						}else {
+							readding = true;
+							valid.addValueListener_(this);
+							readding = false;
+						}
+					}catch(InvalidValueException x) {
+						// Value was invalid after all;
+						//Do not remove the listener, 
+						//but keep it installed to get notified again when the value becomes valid.
+					}
+				}				
+			}
+		};
+		valid.addValueListener_(vl);
+		return vl;
+	}
 
 }

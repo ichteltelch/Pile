@@ -910,7 +910,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 						reco.fulfill(s/items.length);
 				})
 				.deferRecomputations()
-				.deferListeners()
+//				.deferListeners()
 				.sealWithSetter((setter, v)->{
 					Double s = sum.get();
 					

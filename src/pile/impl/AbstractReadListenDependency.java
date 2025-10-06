@@ -477,14 +477,23 @@ HasInternalLock
 					amRunning=true;
 					someThreadIsWorkingInformQueue=Thread.currentThread();
 				}
+				assert amRunning;
+				assert someThreadIsWorkingInformQueue==Thread.currentThread();
+
 				while(true) {
 					Runnable run;
 					assert !Thread.holdsLock(informQueue);
 					// assert !Thread.holdsLock(informRunnerMutex);
+					
+					assert amRunning;
+					assert someThreadIsWorkingInformQueue==Thread.currentThread();
 
 					synchronized(informQueue) {
 						run = informQueue.poll();
 					}
+				
+					assert amRunning;
+					assert someThreadIsWorkingInformQueue==Thread.currentThread();
 					if(run==null) {
 						assert amRunning;
 						if(DE)
@@ -503,6 +512,9 @@ HasInternalLock
 						}	
 						break;
 					}
+					assert amRunning;
+					assert someThreadIsWorkingInformQueue==Thread.currentThread();
+
 					if(ET_TRACE && traceEnabledFor(this))synchronized(trace) {trace.add("process informQueue item");}
 					assert !Thread.holdsLock(mutex);
 					try {
@@ -510,6 +522,12 @@ HasInternalLock
 					}catch(Throwable t) {
 						log.log(Level.INFO, "Isolated an error", t);
 					}		
+					assert amRunning;
+					if(someThreadIsWorkingInformQueue!=Thread.currentThread()) {
+						amRunning = false;
+						break;
+					}
+
 				}
 				//				synchronized (informRunnerMutex) {
 				//					if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
@@ -523,12 +541,22 @@ HasInternalLock
 			}
 		}finally {
 			try {
-				assert !amRunning;
+				if(someThreadIsWorkingInformQueue==Thread.currentThread()) {
+					if(someThreadIsWorkingInformQueue==Thread.currentThread()) {
+						synchronized (informRunnerMutex) {
+							amRunning=false;
+							assert someThreadIsWorkingInformQueue==Thread.currentThread();
+							someThreadIsWorkingInformQueue=null;
+							WaitService.get().notifyAll(informRunnerMutex);
+						}		
+					}
+				}
+				//assert !amRunning;
 				if(amRunning) {
 					synchronized (informRunnerMutex) {
 						amRunning=false;
-						assert someThreadIsWorkingInformQueue==Thread.currentThread();
-						someThreadIsWorkingInformQueue=null;
+//						assert someThreadIsWorkingInformQueue==Thread.currentThread();
+//						someThreadIsWorkingInformQueue=null;
 						WaitService.get().notifyAll(informRunnerMutex);
 					}	
 				}

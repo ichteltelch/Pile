@@ -520,10 +520,10 @@ implements Pile<E>, HasAssociations.Mixin
 	private void ___startPendingRecompute(boolean force, boolean _scout) {
 		if(deferringRecomputations) {
 			try {
-	//			ListenValue.DEFER.run(()->
+				//			ListenValue.DEFER.run(()->
 				Recomputations.NOT_NOW.run(()->
 				___startPendingRecompute_undeferred(force, _scout)
-	//			)
+				//			)
 						);
 			}finally {
 			}
@@ -1606,13 +1606,16 @@ implements Pile<E>, HasAssociations.Mixin
 				//			}
 
 				invalidated=false;
-				if(changingDependencies==null)
-					changingDependencies=new HashSet<Dependency>();
-				if(!changingDependencies.add(d)) {
-					try {
-						throw new IllegalStateException("Dependency was already changing");
-					}catch(IllegalStateException x) {
-						x.printStackTrace();
+				synchronized (invalidDependenciesMutex) {
+					if(changingDependencies==null)
+						changingDependencies=new HashSet<Dependency>();
+					if(!changingDependencies.add(d)) {
+						
+						try {
+							throw new IllegalStateException("Dependency was already changing: "+d.dependencyName()+" of "+dependencyName());
+						}catch(IllegalStateException x) {
+							x.printStackTrace();
+						}
 					}
 				}
 				dependencyTransactions++;
@@ -1676,13 +1679,21 @@ implements Pile<E>, HasAssociations.Mixin
 				if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
 					System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 				}
-				if(changingDependencies == null || !changingDependencies.contains(d)) {
-					try {
-						throw new IllegalStateException("Dependency was not changing");
-					}catch(IllegalStateException x) {
-						x.printStackTrace();
+				synchronized (invalidDependenciesMutex) {
+
+					if(changingDependencies == null || !changingDependencies.contains(d)) {
+						try {
+							throw new IllegalStateException("Dependency was not changing");
+						}catch(IllegalStateException x) {
+							x.printStackTrace();
+						}
+						return;
 					}
-					return;
+					if(invalidDependencies==null)
+						invalidDependencies=new HashSet<Dependency>();
+                    if(!invalidDependencies.add(d)) {
+//                    	throw new IllegalStateException("Dependency was already known as invalid");
+                    }
 				}
 				wasValid = valid;
 				if(valid)
@@ -1705,7 +1716,11 @@ implements Pile<E>, HasAssociations.Mixin
 								return;
 							//					cause.clone();
 							for(Depender d2: informed) {
-								d2.escalateDependencyChange(this);
+								try {
+									d2.escalateDependencyChange(this);
+								}catch(RuntimeException|Error e) {
+									log.log(Level.SEVERE, "Error informing of dependency change", e);
+								}
 							}
 
 						});
@@ -1772,24 +1787,31 @@ implements Pile<E>, HasAssociations.Mixin
 					if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
 						System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 					}
+
 					if(changingDependencies==null)
 						throw new IllegalStateException("There are no changing dependencies!");
 
-					if(changingDependencies.remove(d)) {
-						if(changed) {
-							if(changedDependencies==null)
-								changedDependencies=new HashSet<>();
-							changedDependencies.add(d);
-						}
-						dependencyTransactions--;
-						invalidated=false;
-					}else {
-						_printConstructionStackTrace();
-						d._printConstructionStackTrace();
-						throw new IllegalStateException("This was not a changing dependency!");
-					}
-					changed |= changedDependencies!=null && !changedDependencies.isEmpty();
 					synchronized(invalidDependenciesMutex) {
+
+						if(changingDependencies.remove(d)) {
+							if(changed) {
+								if(changedDependencies==null)
+									changedDependencies=new HashSet<>();
+								changedDependencies.add(d);
+							}
+							dependencyTransactions--;
+							invalidated=false;
+						}else {
+							_printConstructionStackTrace();
+							d._printConstructionStackTrace();
+							try {
+								throw new IllegalStateException("This was not a changing dependency! + "+d.dependencyName()+" of "+dependencyName());
+							}catch(IllegalStateException x) {
+								x.printStackTrace();
+							}
+							
+						}
+						changed |= changedDependencies!=null && !changedDependencies.isEmpty();
 						//					checkForDestroyedDeps();
 
 						if(invalidDependencies==null)
@@ -2763,7 +2785,11 @@ implements Pile<E>, HasAssociations.Mixin
 									}
 									try {
 										for(Depender d: notify) {
-											d.__dependencyBecameLongTermInvalid(this);
+											try {
+												d.__dependencyBecameLongTermInvalid(this);
+											}catch(RuntimeException|Error e) {
+												log.log(Level.SEVERE, "Error informing of dependency change", e);
+											}
 										}
 									}finally {
 										if(starter)

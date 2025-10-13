@@ -319,8 +319,15 @@ HasInternalLock
 							if(informed.contains(d))
 								return;
 							if(ET_TRACE && traceEnabledFor(this))trace("Inform new depender "+d);
-							d.dependencyBeginsChanging(this, wasValid, propagateInvalidity);						
-							informed.add(d);	
+							if(informed.add(d)) {	
+								try {
+									d.dependencyBeginsChanging(this, wasValid, propagateInvalidity);
+								}catch(RuntimeException|Error e) {
+									log.log(Level.SEVERE, "Error informing of dependency change", e);
+								}
+							}else {
+								log.severe("Concurrent modification of informed");
+							}
 						});
 					}
 					wiq=true;
@@ -414,6 +421,7 @@ HasInternalLock
 		assert !Thread.holdsLock(mutex);
 		if(Thread.holdsLock(informRunnerMutex))
 			return;
+		boolean wasRunningOnEntry = someThreadIsWorkingInformQueue == Thread.currentThread();
 		boolean amRunning = false;
 		try {
 			Recomputations.NOT_NOW.__incrementSuppressors();
@@ -504,7 +512,8 @@ HasInternalLock
 
 							amRunning=false;
 							assert someThreadIsWorkingInformQueue==Thread.currentThread();
-							someThreadIsWorkingInformQueue=null;
+							if(!wasRunningOnEntry)
+								someThreadIsWorkingInformQueue=null;
 							WaitService.get().notifyAll(informRunnerMutex);
 							//							if(!amRunning && someThreadIsWorkingInformQueue==Thread.currentThread())
 							//								System.out.println();
@@ -522,6 +531,7 @@ HasInternalLock
 					}catch(Throwable t) {
 						log.log(Level.INFO, "Isolated an error", t);
 					}		
+					assert someThreadIsWorkingInformQueue==Thread.currentThread();
 					assert amRunning;
 					if(someThreadIsWorkingInformQueue!=Thread.currentThread()) {
 						amRunning = false;
@@ -542,11 +552,12 @@ HasInternalLock
 		}finally {
 			try {
 				if(someThreadIsWorkingInformQueue==Thread.currentThread()) {
-					if(someThreadIsWorkingInformQueue==Thread.currentThread()) {
-						synchronized (informRunnerMutex) {
+					synchronized (informRunnerMutex) {
+						if(someThreadIsWorkingInformQueue==Thread.currentThread()) {
 							amRunning=false;
 							assert someThreadIsWorkingInformQueue==Thread.currentThread();
-							someThreadIsWorkingInformQueue=null;
+							if(!wasRunningOnEntry)
+								someThreadIsWorkingInformQueue=null;
 							WaitService.get().notifyAll(informRunnerMutex);
 						}		
 					}
@@ -589,7 +600,11 @@ HasInternalLock
 
 						if(informed!=null && informed.contains(d)) {
 							if(ET_TRACE && traceEnabledFor(this))trace("Un-inform removed Depender "+d);
-							d.dependencyEndsChanging(this, true);
+							try {
+								d.dependencyEndsChanging(this, true);
+							}catch(RuntimeException|Error e) {
+								log.log(Level.SEVERE, "Error informing of dependency change", e);
+							}
 							if(informed!=null)
 								informed.remove(d);
 						}else {
@@ -714,15 +729,19 @@ HasInternalLock
 								assert !Thread.holdsLock(mutex);
 
 								for(WeakIdentityCleanup<Depender> dr: deparr) {
-									Depender d=dr.get();
-									if(d!=null) {
-										if(informed.add(d)) {
-											if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers "+d);
-											d.dependencyBeginsChanging(this, wasValid, moveValueToOldValue);
-										}else {
-											if(wasValid && moveValueToOldValue)
-												d.escalateDependencyChange(this);
+									try {
+										Depender d=dr.get();
+										if(d!=null) {
+											if(informed.add(d)) {
+												if(ET_TRACE && traceEnabledFor(this))trace("now informing dependers "+d);
+												d.dependencyBeginsChanging(this, wasValid, moveValueToOldValue);
+											}else {
+												if(wasValid && moveValueToOldValue)
+													d.escalateDependencyChange(this);
+											}
 										}
+									}catch(RuntimeException|Error e) {
+										log.log(Level.SEVERE, "Error informing of dependency change", e);
 									}
 								}
 
@@ -882,8 +901,12 @@ HasInternalLock
 									Depender[] notify = informed.toArray(new Depender[informed.size()]);
 									informed.clear();
 									for(Depender d: notify) {
+										try {
 										if(ET_TRACE && traceEnabledFor(this))trace("un-inform: "+d);
-										d.dependencyEndsChanging(this, changed);
+											d.dependencyEndsChanging(this, changed);
+										}catch(RuntimeException|Error e) {
+											log.log(Level.SEVERE, "Error informing of dependency change", e);
+										}
 									}
 								});
 							}

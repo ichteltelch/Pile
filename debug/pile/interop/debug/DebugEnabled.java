@@ -1,5 +1,6 @@
 package pile.interop.debug;
 
+import java.io.PrintStream;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -162,6 +163,22 @@ public class DebugEnabled {
 	}
 	public static void stopIfRequested() {
 		stopIfRequested(Thread.currentThread());
+	}
+	public static void printStackTrace() {
+		printStackTrace(System.err);
+	}
+	public static void printStackTrace(PrintStream err) {
+		printStackTrace(err, "trace");
+	}
+	public static void printStackTrace(String msg) {
+		printStackTrace(System.err, msg);
+	}
+	protected static void printStackTrace(PrintStream err, String msg) {
+		try {
+			throw new Exception(msg);
+		}catch (Exception e) {
+			e.printStackTrace(err);
+		}
 	}
 
 

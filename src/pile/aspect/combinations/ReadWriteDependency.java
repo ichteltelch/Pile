@@ -113,20 +113,23 @@ public interface ReadWriteDependency<E> extends ReadWriteValue<E>, ReadDependenc
 			Dependency... dependencies
 			){
 		Consumer<? super F> setter = v.makeSetter();
+		Object sync = new Object();
 		Consumer<? super F> interceptor = value->{
-			try(Suppressor vta=v.transaction()){
-				try(Suppressor ta=transaction()){
-					setter.accept(value);
-					set(mapFunction.applyInverse(value));
-
-				}
-				if(consistenyCheck!=null) {
-					F re = mapFunction.apply(get());
-					if(!consistenyCheck.test(value, re))
-						setter.accept(re);
+			synchronized (sync) 
+			{
+				try(Suppressor vta=v.transaction()){
+					try(Suppressor ta=transaction()){
+						setter.accept(value);
+						set(mapFunction.applyInverse(value));
+	
+					}
+					if(consistenyCheck!=null) {
+						F re = mapFunction.apply(get());
+						if(!consistenyCheck.test(value, re))
+							setter.accept(re);
+					}
 				}
 			}
-
 		};
 		if(reentryGuard)
 			interceptor=new Nonreentrant().fixed(interceptor, a->{

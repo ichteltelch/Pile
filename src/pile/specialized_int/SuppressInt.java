@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 import pile.aspect.bracket.ValueBracket;
 import pile.aspect.bracket.ValueOnlyBracket;
 import pile.aspect.combinations.Pile;
+import pile.aspect.suppress.CancelClose;
 import pile.aspect.suppress.Suppressor;
 import pile.interop.debug.DebugEnabled;
 import pile.interop.exec.StandardExecutors;
@@ -220,4 +221,30 @@ public class SuppressInt extends IndependentInt{
 			ret=ret.detectStuck();
 		return ret;
 	}
+
+	public void idemGuard(int limit, Consumer<Runnable> exa, Runnable job) {
+		Suppressor s = suppress().wrapWeak();
+		try(CancelClose cc = s.cancellableRelease()){
+			exa.accept(()->{
+				s.release();
+				if(get()<limit)
+					job.run();
+			});
+			cc.cancel();
+		}
+	}
+	public void idemGuard(int limit, Consumer<Runnable> exa, Runnable onDiscard, Runnable job) {
+		Suppressor s = suppress().wrapWeak();
+		try(CancelClose cc = s.cancellableRelease()){
+			exa.accept(()->{
+				s.release();
+				if(get()<limit)
+					job.run();
+				else
+					onDiscard.run();
+			});
+			cc.cancel();
+		}
+	}
+
 }

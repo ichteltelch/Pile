@@ -1,6 +1,7 @@
 package pile.aspect.combinations;
 
 import java.util.Comparator;
+import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -75,6 +76,7 @@ public interface ReadDependency<E> extends ReadValue<E>, Dependency{
 	}
 	public default <V extends SealPile<F>, F> SealPileBuilder<V, F> _mapBuilder(V v,
 			Function<? super E, ? extends F> mapFunction) {
+		Objects.requireNonNull(mapFunction);
 		return new SealPileBuilder<>(v)
 				.recompute(()->mapFunction.apply(get()))
 				.dependOn(true, this);

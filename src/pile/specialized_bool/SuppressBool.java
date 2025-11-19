@@ -88,12 +88,14 @@ public class SuppressBool extends IndependentBool{
 	public void __decrement() {		
 		if(asyncChange!=null) {
 			synchronized (setter) {
-				--suppressors;
+				--suppressors; 
+				logDecrement();
 			}
 			asyncChange.enqueue(()->{
 				boolean nv2;
 				synchronized (setter) {
 					--suppressors;
+					logDecrement();
 					nv2 = suppressors>0;
 				}	
 				setter.accept(nv2);
@@ -101,6 +103,7 @@ public class SuppressBool extends IndependentBool{
 		}else {
 			synchronized (setter) {
 				--suppressors;
+				logDecrement();
 				setter.accept(suppressors>0);
 			}
 		}
@@ -115,6 +118,7 @@ public class SuppressBool extends IndependentBool{
 			if(asyncChange!=null) {
 				synchronized (setter) {
 					++suppressors;
+					logIncrement();
 				}
 				s=ss;
 				try {
@@ -122,6 +126,7 @@ public class SuppressBool extends IndependentBool{
 						boolean nv2;
 						synchronized (setter) {
 							--suppressors;
+							logDecrement();
 							nv2 = suppressors>0;
 						}	
 						setter.accept(nv2);
@@ -133,6 +138,7 @@ public class SuppressBool extends IndependentBool{
 			}else {
 				synchronized (setter) {
 					++suppressors;
+					logIncrement();
 					s=ss;
 					setter.accept(suppressors>0);
 				}
@@ -142,6 +148,24 @@ public class SuppressBool extends IndependentBool{
 			if(s!=null)
 				s.release();
 		}
+	}
+	protected void logIncrement() {
+//		if(avName!=null) {
+//			try {
+//				throw new RuntimeException("increment suppressors: "+avName);
+//			}catch(RuntimeException e) {
+//				e.printStackTrace();
+//			}
+//		}
+	}
+	protected void logDecrement() {
+//		if(avName!=null) {
+//			try {
+//				throw new RuntimeException("decrement suppressors: "+avName);
+//			}catch(RuntimeException e) {
+//				e.printStackTrace();
+//			}
+//		}
 	}
 	@Override
 	public SuppressBool setName(String name) {

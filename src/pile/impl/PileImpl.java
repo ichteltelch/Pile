@@ -2440,10 +2440,24 @@ implements Pile<E>, HasAssociations.Mixin
 		}
 		setAutoValidating.accept(isAutoValidating());
 
+
+		__workInformQueue();
 		recompute=null;
 		owner=null;
-		__workInformQueue();
-
+		listeners=null;
+		validity=null;
+		setValidity=Functional.NOP;
+		validNull=null;
+		setValidNull=Functional.NOP;
+		computing=null;
+		setComputing=Functional.NOP;
+		autoValidatingR=null;
+		setAutoValidating=Functional.NOP;		
+		th=null;
+		associations=null;
+		associationRq=null;
+		transformMutex=null;
+		transformThread=null;
 
 	}
 	public void deepDestroy() {

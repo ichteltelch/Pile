@@ -1,5 +1,6 @@
 package pile.builder;
 
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.Set;
 import java.util.function.BiPredicate;
@@ -7,6 +8,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import pile.aspect.Dependency;
+import pile.aspect.ReadValue;
 import pile.aspect.ReadValue.InvalidValueException;
 import pile.aspect.WriteValue;
 import pile.aspect.combinations.ReadDependency;
@@ -15,6 +17,7 @@ import pile.aspect.combinations.ReadListenValue;
 import pile.aspect.combinations.ReadWriteDependency;
 import pile.aspect.combinations.ReadWriteListenDependency;
 import pile.aspect.combinations.ReadWriteListenValue;
+import pile.aspect.listen.ListenValue;
 import pile.aspect.listen.RateLimitedValueListener;
 import pile.aspect.listen.ValueListener;
 import pile.aspect.recompute.GenericDependencyRecorder;
@@ -25,6 +28,7 @@ import pile.impl.AbstractReadListenDependency;
 import pile.impl.Piles;
 import pile.impl.SealPile;
 import pile.specialized_bool.combinations.ReadListenValueBool;
+import pile.specialized_bool.combinations.ReadValueBool;
 import pile.utils.Functional;
 import pile.utils.WeakCleanupWithRunnable;
 
@@ -568,6 +572,161 @@ extends IPileBuilder<Self, V, E>, ISealableBuilder<Self, V, E>{
 		return seal();
 	}
 
+	
+	/**
+	 * Configures the {@link #valueBeingBuilt()} to be a read-write buffer.
+     *
+     * This is achieved by means of a {@link ValueListener} that keeps no strong references to the
+	 * buffer. 
+	 * The main use case I intend for this is to shorten transaction cascades, as the follower value will not
+	 * enter a transaction if the leader does.
+	 * The buffer keeps a strong reference to its leader in its {@link AbstractReadListenDependency#owner owner} field, unless the owner field is already set.
+	 * The buffer inherits brackets and equivalence relation from the {@code leader}.
+	 * Writes to the buffer will first change the {@code leader}, then the buffer.
+	 * @param leader
+	 * @return
+	 */
+	public default Self setupWritableWeakBuffer(ReadWriteListenValue<E> _leader) {
+		WeakReference<ReadWriteListenValue<E>> weakLeader = new WeakReference<>(_leader);
+		V follower = valueBeingBuilt();
+		if(follower.avName==null)
+			follower.avName=("weak buffered ("+_leader.dependencyName()+")");
+		if(follower.owner==null)
+			follower.owner=weakLeader;
+
+		WriteValue<? super E> followerSetter = follower.makeSetter();
+		WeakCleanupWithRunnable<WriteValue<? super E>> followerRef = new WeakCleanupWithRunnable<>(followerSetter, null);
+
+		WeakReference<ReadListenValueBool> weakValid=new WeakReference<>(_leader.validity());
+
+		ValueListener cl=e->{
+			WriteValue<? super E> setter = followerRef.get();
+			if(setter==null)
+				return;
+			ReadValueBool valid = weakValid.get();
+			if(valid==null)
+				return;
+			if(valid.isTrue()) {
+				try {
+					E value;
+					ReadValue<E> leader = weakLeader.get();
+					value = leader==null?null:leader.getValidOrThrow();
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
+						setter.set(value);
+					}
+				} catch (InvalidValueException x) {
+					setter.permaInvalidate();
+				}
+			}else {
+				setter.permaInvalidate();
+			}
+		};
+
+		inheritBrackets(false, _leader);
+		
+
+
+		_leader.addValueListener(cl);
+		_leader.validity().addValueListener(cl);
+		followerRef.setCleanupAction(()->{
+			ListenValue leader = weakLeader.get();
+			ListenValue valid = weakValid.get();
+			if(leader!=null)leader.removeValueListener(cl);	
+			if(valid!=null)valid.removeValueListener(cl);	
+		});
+
+
+		follower._setEquivalence(_leader._getEquivalence());
+		follower._addCorrector(v->{
+			ReadWriteListenValue<E> leader = weakLeader.get();
+			if(leader!=null)
+				v = leader.applyCorrection(v);
+			return v;
+		});
+
+
+		cl.runImmediately(true);
+
+		return seal(newValue->{
+			ReadWriteListenValue<E> leader = weakLeader.get();
+			if(leader!=null)
+				followerSetter.set(leader.set(newValue));
+			else
+				followerSetter.set(newValue);
+		}, false);
+
+	}
+	/**
+	 * Configures the {@link #valueBeingBuilt() value being built} to be a read-only buffer.
+	 * This is achieved by means of a {@link ValueListener} that keeps no strong references to the
+	 * buffer. 
+	 * The main use case I intend for this is to shorten transaction cascades, as the follower value will not
+	 * enter a transaction if the leader does.
+	 * The buffer keeps a strong reference to its leader in its {@link AbstractReadListenDependency#owner owner} field, unless the owner field is already set.
+	 * The buffer inherits brackets and equivalence relation from the {@code leader}
+	 * @param leader
+	 * @return
+	 */
+	public default Self setupWeakBuffer(ReadListenValue<E> _leader) {
+		WeakReference<ReadListenValue<E>> weakLeader = new WeakReference<>(_leader);
+		V follower = valueBeingBuilt();
+		if(follower.avName==null)
+			follower.avName=("buffered ("+_leader.dependencyName()+")");
+		if(follower.owner==null)
+			follower.owner=weakLeader;
+
+
+		WriteValue<? super E> followerSetter = follower.makeSetter();
+		WeakCleanupWithRunnable<WriteValue<? super E>> followerRef = new WeakCleanupWithRunnable<>(followerSetter, null);
+
+		WeakReference<ReadListenValueBool> weakValid=new WeakReference<>(_leader.validity());
+
+		ValueListener cl=e->{
+			WriteValue<? super E> setter = followerRef.get();
+			if(setter==null)
+				return;
+			ReadValueBool valid = weakValid.get();
+			if(valid==null)
+				return;
+			if(valid.isTrue()) {
+				try {
+					E value;
+					ReadValue<E> leader = weakLeader.get();
+					value = leader==null?null:leader.getValidOrThrow();
+					try(MockBlock _s = Piles.withShouldDeepRevalidate(false)){
+						setter.accept(value);
+					}
+				} catch (InvalidValueException x) {
+					setter.permaInvalidate();
+				}
+			}else {
+				setter.permaInvalidate();
+			}
+		};
+
+		inheritBrackets(false, _leader);
+
+
+		_leader.addValueListener(cl);
+		_leader.validity().addValueListener(cl);
+		followerRef.setCleanupAction(()->{
+			ListenValue leader = weakLeader.get();
+			ListenValue valid = weakValid.get();
+			if(leader!=null)leader.removeValueListener(cl);	
+			if(valid!=null)valid.removeValueListener(cl);	
+		});
+
+
+		follower._setEquivalence(_leader._getEquivalence());
+
+
+		cl.runImmediately(true);
+
+		
+
+
+		return seal();
+	}
 	
 	
 	/**

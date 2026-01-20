@@ -112,7 +112,32 @@ public interface ReadListenValue<E> extends ReadValue<E>, ListenValue{
 		return Piles.<E>sb().setupBuffer(this);
 	}
 	
-	
+	/** 
+	 * By default this delegates to {@link #readOnlyWeakBuffer()}, 
+	 * but subclasses that also implement {@link ReadWriteListenValue} call
+	 * {@link ReadWriteListenValue#writableWeakBuffer()} instead.
+	 */
+	public default SealPile<E> weakBuffer(){
+		return readOnlyBuffer();
+	}
+	/** 
+	 * By default this delegates to {@link #readOnlyWeakBufferBuilder()}, 
+	 * but subclasses that also implement {@link ReadWriteListenValue} call
+	 * {@link ReadWriteListenValue#writableWeakBufferBuilder()} instead.
+	 */
+	public default SealPileBuilder<? extends SealPile<E>, E> weakBufferBuilder() {
+		return readOnlyBufferBuilder();
+	}
+	/** @see ISealPileBuilder#setupWeakBuffer(ReadListenValue) */
+
+	public default SealPile<E> readOnlyWeakBuffer(){
+		return readOnlyWeakBufferBuilder().build();
+	}
+	/** @see ISealPileBuilder#setupBuffer(ReadListenValue) */
+
+	public default SealPileBuilder<? extends SealPile<E>, E> readOnlyWeakBufferBuilder() {
+		return Piles.<E>sb().setupWeakBuffer(this);
+	}
 	
 	
 	/** 

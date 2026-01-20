@@ -62,6 +62,14 @@ public interface ReadWriteListenValue<E> extends ReadListenValue<E>, ReadWriteVa
 	public default SealPileBuilder<? extends SealPile<E>, E> writableBufferBuilder() {return Piles.<E>sb().setupWritableBuffer(this);}
 
 	
+	@Override public default SealPile<E> weakBuffer(){return writableWeakBuffer();}
+	/** delegates to {@link #writableBufferBuilder()} */
+	@Override public default SealPileBuilder<? extends SealPile<E>, E> weakBufferBuilder() {return writableWeakBufferBuilder();}
+	/** @see ISealPileBuilder#setupWritableBuffer(ReadWriteListenValue) */
+	public default SealPile<E> writableWeakBuffer() {return writableWeakBufferBuilder().build();}
+	public default SealPileBuilder<? extends SealPile<E>, E> writableWeakBufferBuilder() {return Piles.<E>sb().setupWritableWeakBuffer(this);}
+
+	
 	@Override public default SealPile<E> rateLimited(long coldStartTime, long coolDownTime){return writableRateLimited(coldStartTime, coolDownTime);}
 	/** delegates to {@link #writableRateLimitedBuilder(long, long)} */
 	@Override public default SealPileBuilder<? extends SealPile<E>, E> rateLimitedBuilder(long coldStartTime, long coolDownTime) {return writableRateLimitedBuilder(coldStartTime, coolDownTime);}

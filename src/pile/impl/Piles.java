@@ -2685,6 +2685,57 @@ public class Piles {
 	
 	
 	
+	/** @see ISealPileBuilder#setupWeakBuffer(ReadListenValue) */
+
+	public static <E> SealPile<E> weakBuffer(ReadListenValue<E> leader) {
+		return Piles.<E>sb().setupWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWeakBuffer(ReadListenValue) */
+	public static SealBool weakBufferBool(ReadListenValue<Boolean> leader) {
+		return PileBool.sb().setupWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWeakBuffer(ReadListenValue) */
+	public static SealInt weakBufferInt(ReadListenValue<Integer> leader) {
+		return PileInt.sb().setupWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWeakBuffer(ReadListenValue) */
+	public static SealDouble weakBufferDouble(ReadListenValue<Double> leader) {
+		return PileDouble.sb().setupWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWeakBuffer(ReadListenValue) */
+	public static SealString weakBufferString(ReadListenValue<String> leader) {
+		return PileString.sb().setupWeakBuffer(leader).build();
+	}
+
+
+
+
+
+
+	/** @see ISealPileBuilder#setupWritableWeakBuffer(ReadListenValue) */
+
+	public static <E> SealPile<E> writableWeakBuffer(ReadWriteListenValue<E> leader) {
+		return Piles.<E>sb().setupWritableWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWritableWeakBuffer(ReadListenValue) */
+	public static SealBool writableWeakBufferBool(ReadWriteListenValue<Boolean> leader) {
+		return PileBool.sb().setupWritableWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWritableWeakBuffer(ReadListenValue) */
+	public static SealInt writableWeakBufferInt(ReadWriteListenValue<Integer> leader) {
+		return PileInt.sb().setupWritableWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWritableWeakBuffer(ReadListenValue) */
+	public static SealDouble writableWeakBufferDouble(ReadWriteListenValue<Double> leader) {
+		return PileDouble.sb().setupWritableWeakBuffer(leader).build();
+	}
+	/** @see ISealPileBuilder#setupWritableWeakBuffer(ReadListenValue) */
+	public static SealString writableWeakBufferDtSealableString(ReadWriteListenValue<String> leader) {
+		return PileString.sb().setupWritableWeakBuffer(leader).build();
+	}
+	
+
+	
 	
 	/** @see IIndependentBuilder#setupValidBuffer(ReadListenValue) */
 	public static <E> Independent<E> validBuffer(ReadListenValue<E> leader){

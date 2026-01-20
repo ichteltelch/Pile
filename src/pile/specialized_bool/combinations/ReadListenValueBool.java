@@ -28,6 +28,12 @@ public interface ReadListenValueBool extends ReadValueBool, ReadListenValue<Bool
 	@Override public default SealBool readOnlyBuffer(){return readOnlyBufferBuilder().build();}
 	@Override public default SealPileBuilder<SealBool, Boolean> readOnlyBufferBuilder() {return PileBool.sb().setupBuffer(this);}
 
+	@Override public default SealBool weakBuffer(){return readOnlyWeakBuffer();}
+	@Override public default SealPileBuilder<SealBool, Boolean> weakBufferBuilder() {return readOnlyWeakBufferBuilder();}
+	@Override public default SealBool readOnlyWeakBuffer(){return readOnlyWeakBufferBuilder().build();}
+	@Override public default SealPileBuilder<SealBool, Boolean> readOnlyWeakBufferBuilder() {return PileBool.sb().setupWeakBuffer(this);}
+
+	
 	@Override public default SealBool rateLimited(long coldStartTime, long coolDownTime){return readOnlyRateLimited(coldStartTime, coolDownTime);}
 	@Override public default SealPileBuilder<SealBool, Boolean> rateLimitedBuilder(long coldStartTime, long coolDownTime) {return readOnlyRateLimitedBuilder(coldStartTime, coolDownTime);}
 	@Override public default SealBool readOnlyRateLimited(long coldStartTime, long coolDownTime){return readOnlyRateLimitedBuilder(coldStartTime, coolDownTime).build();}

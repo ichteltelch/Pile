@@ -37,6 +37,11 @@ ReadWriteListenValue<Boolean>
 	@Override public default SealBool writableBuffer() {return writableBufferBuilder().build();}
 	@Override public default SealPileBuilder<SealBool, Boolean> writableBufferBuilder() {return PileBool.sb().setupWritableBuffer(this);}
 
+	@Override public default SealBool weakBuffer(){return writableWeakBuffer();}
+	@Override public default SealPileBuilder<SealBool, Boolean> weakBufferBuilder(){return writableWeakBufferBuilder();}
+	@Override public default SealBool writableWeakBuffer() {return writableWeakBufferBuilder().build();}
+	@Override public default SealPileBuilder<SealBool, Boolean> writableWeakBufferBuilder() {return PileBool.sb().setupWritableWeakBuffer(this);}
+
 	@Override public default SealBool rateLimited(long coldStartTime, long coolDownTime){return writableRateLimited(coldStartTime, coolDownTime);}
 	@Override public default SealPileBuilder<SealBool, Boolean> rateLimitedBuilder(long coldStartTime, long coolDownTime){return writableRateLimitedBuilder(coldStartTime, coolDownTime);}
 	@Override public default SealBool writableRateLimited(long coldStartTime, long coolDownTime) {return writableRateLimitedBuilder(coldStartTime, coolDownTime).build();}

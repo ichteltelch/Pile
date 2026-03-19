@@ -336,13 +336,17 @@ public interface ValueBracket<E, O> {
 		ValueOnlyBracket<E> ret = new ValueOnlyBracket<E>() {
 			@Override
 			public boolean open(E value, Object owner) {
-				extract.apply(value).addValueListener_(l);
+				ListenValue e = extract.apply(value);
+				if(e!=null)
+					e.addValueListener_(l);
 				return true;
 			}
 
 			@Override
 			public boolean close(E value, Object owner) {
-				extract.apply(value).removeValueListener(l);
+				ListenValue e = extract.apply(value);
+				if(e!=null)
+					e.removeValueListener(l);
 				return false;
 			}
 

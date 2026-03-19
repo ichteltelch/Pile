@@ -20,11 +20,11 @@ import pile.interop.wait.WaitService;
  * @author bb
  *
  */
-public class SequentialQueue extends AbstractExecutorService{
+public class SequentialQueue extends AbstractExecutorService implements ExecutorWithRecentThread {
 	private final static Logger log=Logger.getLogger("SequentialQueue");
 
 	Future<?> queueWorkerFuture;
-	Thread queueWorkerThread;
+	volatile Thread queueWorkerThread;
 	ArrayDeque<Runnable> q;
 	private String name;
 	Runnable afterJob;
@@ -313,6 +313,12 @@ public class SequentialQueue extends AbstractExecutorService{
 	public synchronized Future<?> getQueueWorker() {
 		return queueWorkerFuture;
 	}
+	
+	@Override
+	public Thread getRecentThread() {
+		return queueWorkerThread;
+	}
+	
 	boolean closed;
 	@Override
 	public synchronized void shutdown() {

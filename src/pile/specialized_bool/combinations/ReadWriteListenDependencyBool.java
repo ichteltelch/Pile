@@ -26,4 +26,8 @@ ReadWriteListenDependency<Boolean>{
 	public default SealBool fallback(Boolean v){
 		return Piles.fallback(this, v);
 	}
+	@Override
+	default ReadWriteListenDependencyBool not() {
+		return ReadWriteDependencyBool.super.not();
+	}
 }

@@ -1831,5 +1831,9 @@ extends Depender, ReadWriteListenDependencyBool, Pile<Boolean>{
 				 .whenChanged(b)
 				 ;
 	 }
+	 @Override
+	default ReadWriteListenDependencyBool not() {
+		return ReadWriteListenDependencyBool.super.not();
+	}
 
 }

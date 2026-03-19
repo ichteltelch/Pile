@@ -8,6 +8,7 @@ import pile.impl.DebugCallback;
 import pile.impl.Piles;
 import pile.impl.SealPile;
 import pile.interop.debug.DebugEnabled;
+import pile.specialized_bool.combinations.ReadListenDependencyBool;
 
 /**
  * Combination of {@link ReadValue}, {@link WriteValue}, {@link ListenValue} and {@link Dependency}
@@ -43,5 +44,9 @@ ReadWriteDependency<E>{
 	@Override
 	default ReadWriteListenDependency<E> asDependency() {
 		return this;
+	}
+	@Override
+	default ReadListenDependencyBool validNull() {
+		return ReadListenDependency.super.validNull();
 	}
 }

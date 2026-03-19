@@ -8,6 +8,7 @@ import pile.aspect.listen.RateLimitedValueListener.MultiEvent;
 import pile.aspect.transform.TransformValueEvent;
 import pile.interop.exec.StandardExecutors;
 import pile.utils.IdentityComparator;
+import pile.utils.SequentialQueue;
 
 /**
  * An object that runs event handler code when a {@link ValueEvent} is received.
@@ -191,5 +192,8 @@ public interface ValueListener {
 		} else {
 			StandardExecutors.unlimited().execute(()->valueChanged(null) );
 		}
+	}
+	public static ValueListener inQueue(SequentialQueue queue, ValueListener listener) {
+		return e->queue.enqueue(()->listener.valueChanged(e));
 	}
 }

@@ -1,5 +1,7 @@
 package pile.aspect;
 
+import java.util.function.Function;
+
 import pile.aspect.combinations.Pile;
 import pile.aspect.suppress.Suppressor;
 import pile.impl.Independent;
@@ -11,6 +13,14 @@ import pile.impl.PileImpl;
  *
  */
 public interface DoesTransactions {
+	/**
+	 * A method handle for the {@link #transaction()} method
+	 */
+	public static final Function<DoesTransactions, Suppressor> TRANSACTION_METHOD = DoesTransactions::transaction;
+	/**
+	 * A method handle for the {@link #transaction(boolean) transaction(false)} method
+	 */
+	public static final Function<DoesTransactions, Suppressor> TRANSACTION_METHOD_NO_INVALIDATE = v->v.transaction(false);
 	/**
 	 * Start a transaction and end it when the returned {@link Suppressor} is
 	 * {@link Suppressor#release() released}. This may or may not make the value invalid until the transaction

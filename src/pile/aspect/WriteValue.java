@@ -2,11 +2,9 @@ package pile.aspect;
 
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import pile.aspect.ReadValue.InvalidValueException;
 import pile.aspect.listen.ValueEvent;
-import pile.aspect.suppress.Suppressor;
 
 /**
  * A value that can be written to.
@@ -18,14 +16,6 @@ public interface WriteValue<E> extends
 Consumer<E>, 
 DoesTransactions, 
 RemembersLastValue{
-	/**
-	 * A method handle for the {@link #transaction()} method
-	 */
-	public static final Function<WriteValue<?>, Suppressor> TRANSACTION_METHOD = WriteValue::transaction;
-	/**
-	 * A method handle for the {@link #transaction(boolena) transaction(false)} method
-	 */
-	public static final Function<WriteValue<?>, Suppressor> TRANSACTION_METHOD_NO_INVALIDATE = v->v.transaction(false);
 	/**
 	 * Set the value.
 	 * The value actually being set may b different because corrections may be applied (@see {@link CorrigibleValue}

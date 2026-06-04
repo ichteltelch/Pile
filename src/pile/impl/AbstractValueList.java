@@ -223,7 +223,19 @@ implements Iterable<E>{
 			head().addDependency(e);
 			elems.add(index, e);
 		}
+		
 		intervalAdded(index, index);
+	}
+	protected boolean manipulating;
+	public synchronized void manipulate(Runnable action) {
+		boolean om = manipulating;
+		try(Suppressor s = head().suppressAutoValidation()){
+			manipulating=true;
+			action.run();
+		}finally {
+			manipulating=om;
+		}
+		contentsChanged(0, size());
 	}
 	/**
 	 * Replace an element at the specified index, wrapped in the given {@link ReadWriteListenDependency}.
@@ -542,7 +554,7 @@ implements Iterable<E>{
 	 * @param sel
 	 * @return
 	 */
-	public int indexOf(Object sel) {
+	public synchronized int indexOf(Object sel) {
 		int ret=0;
 		for(E e: this) {
 			if(Objects.equals(sel, e))

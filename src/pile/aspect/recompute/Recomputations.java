@@ -10,7 +10,6 @@ import pile.aspect.Dependency;
 import pile.aspect.listen.ListenValue;
 import pile.aspect.suppress.MockBlock;
 import pile.utils.defer.Deferrer;
-import pile.utils.defer.DeferrerQueue;
 
 /**
  * Stuff for interacting with the current recomputation.

@@ -49,12 +49,6 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** high (doc typos). **Impact:** misleading javadoc only.
 - **Found:** composites wave.
 
-### PB-13 — valid-buffer subscribes to value changes but not validity (author-flagged)
-- **Where:** `IIndependentBuilder.setupValidBuffer` / `setupWritableValidBuffer`.
-- **Symptom:** the buffer subscribes only to the leader's *value* listener, not its *validity*; when the leader transitions valid↔invalid without a value-change event, the buffer may never refresh. Carries the author's own `//TODO: Why does the buffer sometimes seem to fail to update?` and a commented-out `leader.validity.addValueListener(cl); //FIX?`.
-- **Confidence:** medium (author-flagged). **Impact:** stale buffer on validity-only transitions.
-- **Found:** `IIndependentBuilder` doc.
-
 ### PB-15 — dead `vl=null` / unreachable `isSealed` branch in bounds re-clamp
 - **Where:** `src/pile/builder/AbstractIndependentBuilder.java`.
 - **Symptom:** in the depend-on-bounds re-clamp block, `if(value.isDefaultSealed()) vl=null;` (no braces/`else`) is immediately overwritten by an unconditional `vl = e->value.set(value.get())`, so the `vl=null` is dead and the `if(vl!=null)` guard can never skip the sealed case. The whole `if(value.isSealed())` arm is also unreachable (the ctor rejects a sealed value and sealing happens later). Looks like a missing `else`/`return`.
@@ -119,6 +113,11 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 - **Where:** `src/pile/aspect/HasAssociations.java`, nested `ReferencePolicy.RunnableSoftReference`.
 - **Symptom:** the class — name *and* javadoc both say `SoftReference` — extended `WeakReference` (a copy-paste from the sibling `RunnableWeakReference`). The `SOFT` policy instantiates it whenever a `Runnable` cleanup is attached, so SOFT-with-cleanup held its referent **weakly** (cleared at the next GC) instead of softly (survives until memory pressure).
 - **Fixed:** `extends WeakReference<T>` → `extends SoftReference<T>` (same two constructors; `SoftReference` already imported and used by the `SOFT` policy).
+
+### PB-13 — valid-buffer didn't subscribe to leader validity (author-flagged; isolated commit)
+- **Where:** `src/pile/builder/IIndependentBuilder.java`, `setupValidBuffer` and `setupWritableValidBuffer`.
+- **Symptom:** the update listener `cl` was registered only on `leader.addValueListener` (value events), not `leader.validity()`. A "last valid value" buffer was left stale when the leader went invalid→valid without a value-change event — the author's own `//TODO: Why does the buffer sometimes seem to fail to update?` + a commented-out `//FIX?`.
+- **Fixed (UNCERTAIN — committed separately so it can be reverted independently):** enabled `leader.validity().addValueListener(cl)` in both builders and extended each cleanup to also `leader.validity().removeValueListener(cl)`. `cl` already guards `if(leader.isValid())`, so firing on validity changes is safe (valid→copy, invalid→no-op; at worst a harmless duplicate copy). Developer was unsure why the `//FIX?` was left commented; isolated pending verification.
 
 ### PB-21 — `Recomputations` forwarding helpers declared non-`static`
 - **Where:** `src/pile/aspect/recompute/Recomputations.java`.

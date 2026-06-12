@@ -206,8 +206,11 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 		follower.set(leader.get());
 
 		leader.addValueListener(cl);
-		//		leader.validity().addValueListener(cl); //FIX?
-		followerRef.setCleanupAction(()->leader.removeValueListener(cl));
+		leader.validity().addValueListener(cl);
+		followerRef.setCleanupAction(()->{
+			leader.removeValueListener(cl);
+			leader.validity().removeValueListener(cl);
+		});
 
 
 		follower._setEquivalence(leader._getEquivalence());
@@ -277,7 +280,11 @@ extends ICorrigibleBuilder<Self, V, E>, IListenValueBuilder<Self, V>, ISealableB
 		follower.set(leader.get());
 
 		leader.addValueListener(cl);
-		followerRef.setCleanupAction(()->leader.removeValueListener(cl));
+		leader.validity().addValueListener(cl);
+		followerRef.setCleanupAction(()->{
+			leader.removeValueListener(cl);
+			leader.validity().removeValueListener(cl);
+		});
 
 		follower._setEquivalence(leader._getEquivalence());
 		follower._addCorrector(leader::applyCorrection);

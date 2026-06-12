@@ -105,7 +105,7 @@ extends Depender, ReadWriteListenDependencyString, PileComparable<String>{
 	 *
 	 */
 	public static class RightmostFulfilling extends SidemostFulfilling<String, SealString>{
-		public static LeftmostFulfilling NOT_NULL = new LeftmostFulfilling(Functional.IS_NOT_NULL, null);
+		public static RightmostFulfilling NOT_NULL = new RightmostFulfilling(Functional.IS_NOT_NULL, null);
 		public RightmostFulfilling(Predicate<? super String> mustFulfill, String ifNone) {
 			super(mustFulfill, ifNone);
 		}

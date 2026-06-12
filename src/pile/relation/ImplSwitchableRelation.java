@@ -78,18 +78,7 @@ public class ImplSwitchableRelation implements SwitchableRelation<ReadListenValu
 				throw e;
 			}
 			if(suppressors==1) {
-				if(shouldBeEnabled.isValid()) {
-
-					try {
-						v = shouldBeEnabled.getValidOrThrow();
-					} catch (InvalidValueException e) {
-						v = false;
-					}
-					if(v==null)
-						v=false;
-				}else {
-					v=false;
-				}
+				v=false;
 				
 			}else {
 				v=null;

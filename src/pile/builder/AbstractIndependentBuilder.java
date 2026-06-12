@@ -50,7 +50,8 @@ implements IIndependentBuilder<Self, V, E>{
 			if(value.isSealed()) {
 				if(value.isDefaultSealed())
 					vl=null;
-				vl = e->value.set(value.get());
+				else
+					vl = e->value.set(value.get());
 			}else {
 				Consumer<? super E> setter = value.makeSetter();
 				vl = e->setter.accept(value.get());

@@ -1593,7 +1593,7 @@ implements Pile<E>, HasAssociations.Mixin
 		try {
 			//			ListenValue.DEFER.__incrementSuppressors();
 			synchronized (mutex) {
-				if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
+				if(_thisDependsOn!=null && !_thisDependsOn.contains(d)) {
 					System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 				}
 				//			if(selWasValid && !wasValid) {
@@ -1676,7 +1676,7 @@ implements Pile<E>, HasAssociations.Mixin
 		try {
 			ListenValue.DEFER.__incrementSuppressors();		
 			synchronized (mutex) {
-				if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
+				if(_thisDependsOn!=null && !_thisDependsOn.contains(d)) {
 					System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 				}
 				synchronized (invalidDependenciesMutex) {
@@ -1784,7 +1784,7 @@ implements Pile<E>, HasAssociations.Mixin
 			try {
 				ListenValue.DEFER.__incrementSuppressors();
 				synchronized (mutex) {
-					if(_thisDependsOn==null && !_thisDependsOn.contains(d)) {
+					if(_thisDependsOn!=null && !_thisDependsOn.contains(d)) {
 						System.err.println(d.dependencyName()+" is not a dependency of "+dependencyName());
 					}
 

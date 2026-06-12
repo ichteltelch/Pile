@@ -43,7 +43,14 @@ public class PrefInterop {
 		 */
 		IGNORE,
 		/**
-		 * Attempt to store a <code>null</code> reference anyway. This is not supported currently.
+		 * Attempt to store a <code>null</code> reference anyway.
+		 * <p>Only partially supported: for {@code String} and {@code Enum} preferences a
+		 * <code>null</code> is stored as the empty string and recalled as <code>null</code>. For
+		 * {@code String}, real all-<code>'\0'</code> values (including the empty string) get a
+		 * trailing <code>'\0'</code> appended on storage (and removed on loading) so they don't
+		 * collide with that encoding. Primitive ({@code boolean}/{@code int}/{@code double})
+		 * preferences still reject it with an {@link IllegalArgumentException}.
+		 * <p>To forbid or redirect <code>null</code>s, add a corrector instead.
 		 */
 		STORE_NULL,
 		/**
@@ -57,6 +64,19 @@ public class PrefInterop {
 	 * and their {@link Object#toString()} methods return equal values.
 	 */
 	private static final BiPredicate<? super Double, ? super Double> STRING_EQUIVALENCE = (a, b)->a==b?true:(a==null|b==null)?false:Objects.equals(a.toString(), b.toString());
+	/**
+	 * Fast early-exit test for whether {@code s} consists entirely of <code>'\0'</code> characters
+	 * (vacuously true for the empty string). Optimized for the common case that it does not — a
+	 * typical string exits on its first character. Used by the {@code String}
+	 * {@link NullBehavior#STORE_NULL} encoding to escape such strings with a trailing
+	 * <code>'\0'</code> so they don't collide with the empty-string encoding of <code>null</code>.
+	 */
+	private static boolean isAllNul(String s) {
+		for(int i=0; i<s.length(); i++)
+			if(s.charAt(i)!='\0')
+				return false;
+		return true;
+	}
 	/**
 	 * Make an {@link IndependentBool} representing a boolean value stored in a {@link Preferences} node
 	 * @param node The node
@@ -631,16 +651,25 @@ public class PrefInterop {
 						e=defaultValue;
 						break;
 					case STORE_NULL:
-						assert false;
-						return;
+						e="";
+						break;
 					}
+				}else if(nb==NullBehavior.STORE_NULL && isAllNul(e)) {
+					e=e+"\0";
 				}
 				node.put(key, e);
 			}
 
 			@Override
 			public String recallLastValue() {
-				return node.get(key, defaultValue);
+				String s = node.get(key, defaultValue);
+				if(nb==NullBehavior.STORE_NULL && s!=null) {
+					if(s.isEmpty())
+						return null;
+					if(isAllNul(s))
+						return s.substring(0, s.length()-1);
+				}
+				return s;
 			}
 
 		};
@@ -697,7 +726,7 @@ public class PrefInterop {
 						break;
 					case STORE_NULL:
 						s = "";
-						return;
+						break;
 					}
 				}else {
 					s = e.name();

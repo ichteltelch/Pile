@@ -49,12 +49,6 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** high (doc typos). **Impact:** misleading javadoc only.
 - **Found:** composites wave.
 
-### PB-15 — dead `vl=null` / unreachable `isSealed` branch in bounds re-clamp
-- **Where:** `src/pile/builder/AbstractIndependentBuilder.java`.
-- **Symptom:** in the depend-on-bounds re-clamp block, `if(value.isDefaultSealed()) vl=null;` (no braces/`else`) is immediately overwritten by an unconditional `vl = e->value.set(value.get())`, so the `vl=null` is dead and the `if(vl!=null)` guard can never skip the sealed case. The whole `if(value.isSealed())` arm is also unreachable (the ctor rejects a sealed value and sealing happens later). Looks like a missing `else`/`return`.
-- **Confidence:** medium. **Impact:** the intended "skip re-clamp when sealed" path never runs (likely benign since the value isn't sealed yet, but the code is wrong).
-- **Found:** `AbstractIndependentBuilder` doc.
-
 ### PB-19 (low / doc) — assorted builder slips
 - `ISealPileBuilder` — `setupBuffer`/`setupWeakBuffer` push the leader via `setter.accept(value)` while the writable twins (`setupWritableBuffer`/`setupWritableWeakBuffer`) use `setter.set(value)`; the `accept`/`set` split may be intentional but looks like a possible copy-paste inconsistency.
 - `SealPileBuilder.java` — class javadoc claims it implements `IIndependentBuilder` (it builds `SealPile`s); copy-paste doc slip.
@@ -62,41 +56,11 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** mixed (mostly doc/cosmetic). **Impact:** misleading docs; the `accept`/`set` one is worth a glance.
 - **Found:** builder wave.
 
-### PB-20 — broken null-guard `_thisDependsOn==null && !_thisDependsOn.contains(d)`
-- **Where:** `PileImpl` — `dependencyBeginsChanging`, `escalateDependencyChange`, `dependencyEndsChanging` (the same guard in all three).
-- **Symptom:** the diagnostic guard dereferences `_thisDependsOn` inside the same `&&` that null-checks it: `if(_thisDependsOn==null && !_thisDependsOn.contains(d))`. If `_thisDependsOn` were null this NPEs; and the "`d` is not a dependency" warning it guards can never fire correctly. Intent was almost certainly `_thisDependsOn != null && !_thisDependsOn.contains(d)`.
-- **Confidence:** high (clearly inverted logic). **Impact:** latent — the value almost always has `_thisDependsOn` non-null when these run, so the broken branch is a dead/incorrect diagnostic rather than a live crash.
-- **Found:** `Recomputer` doc (opportunistic).
-
 ### PB-26 (suspicious) — deferred/queued bracket nop-metadata mixes up keep/remain
 - **Where:** `src/pile/aspect/bracket/DeferredValueBracket.java` and `QueuedValueBracket.java`.
 - **Symptom:** `openIsNop` returns `keep==null & !backDoesOpen` but `open`'s return is driven by `remain` (not `keep`); `closeIsNop` returns `remain==null & !backDoesClose` but `close`'s return is driven by `keep`. The keep/remain guards appear swapped, so the nop metadata can be wrong when exactly one of keep/remain is non-null. Duplicated across both twins (possibly intentional, but suspicious).
 - **Confidence:** low-medium. **Impact:** the framework's nop-optimization may skip/keep a bracket incorrectly in edge cases.
 - **Found:** `DeferredValueBracket` + `QueuedValueBracket` docs.
-
-### PB-31 — `PrefInterop.rememberEnum`'s `STORE_NULL` branch is a dead no-op
-- **Where:** `src/pile/interop/preferences/PrefInterop.java`, the `LastValueRememberer<E>.storeLastValue` returned by `rememberEnum`.
-- **Symptom:** the `STORE_NULL` case sets `s = ""` then `return`s immediately, so the trailing `node.put(key, s)` never runs. The branch appears to store `""` but writes nothing.
-- **Confidence:** medium-high. **Impact:** with `NullBehavior.STORE_NULL`, a null enum is silently not persisted (the prior stored value survives).
-- **Found:** `PrefInterop` doc.
-
-### PB-32 — `PrefInterop.rememberString` silently drops a `STORE_NULL` write when assertions are off
-- **Where:** `src/pile/interop/preferences/PrefInterop.java`, the `LastValueRememberer<String>.storeLastValue` returned by `rememberString`.
-- **Symptom:** unlike the primitive factories (which reject `STORE_NULL` at construction), `rememberString` accepts it; its `STORE_NULL` switch case is `assert false; return;`. With assertions disabled a `STORE_NULL` null-write silently does nothing instead of storing (likely intent: store `null`/`""`, or reject at construction like the primitive variants).
-- **Confidence:** medium. **Impact:** inconsistent `STORE_NULL` handling for the String factory; silent no-op in production (assertions off).
-- **Found:** `PrefInterop` doc.
-
-### PB-36 — `ImplSwitchableRelation.disable()` enables instead of disables on first suppressor
-- **Where:** `src/pile/relation/ImplSwitchableRelation.java`, `disable()`.
-- **Symptom:** when acquiring the **first** suppressor (`suppressors == 1`), the method reads `v = shouldBeEnabled.getValidOrThrow()` and does `if (v != null) setEnabled.accept(v)` — pushing the `shouldBeEnabled` value (i.e. `true` when the relation *should* be on) into `isEnabled`. But a suppressor is now held, so the relation must be **off**. The first-acquire branch never forces `false` for the suppressor it just added (only the already-had-a-suppressor `else` path no-ops, and the release callback correctly re-checks `suppressors == 0`). The parallel `sbeChanged` handler does `if (suppressors > 0) v = false;` — the missing mirror of that here is the defect.
-- **Confidence:** medium-high. **Impact:** acquiring the first `disable()` suppressor while `shouldBeEnabled == true` momentarily flips `isEnabled` to `true` instead of `false`, so the relation briefly (or until the next event) keeps enforcing while supposedly suppressed.
-- **Found:** `ImplSwitchableRelation` doc.
-
-### PB-41 — `PileString.RightmostFulfilling.NOT_NULL` is wrongly a `LeftmostFulfilling`
-- **Where:** `src/pile/specialized_String/PileString.java`, the inner class `RightmostFulfilling`, static field `NOT_NULL`.
-- **Symptom:** the field is declared as type `LeftmostFulfilling` and constructed as `new LeftmostFulfilling(...)` — a copy-paste slip from the sibling `LeftmostFulfilling.NOT_NULL`; it should be a `RightmostFulfilling`. The instance method `RightmostFulfilling.apply` is correct (right-biased), so only the (apparently unused) static constant is wrong.
-- **Confidence:** medium-high (subagent read). **Impact:** low — the constant appears unused; left-biased if anyone does use it.
-- **Found:** `specialized_String` index.
 
 > Minor (not logged as PB): `ReadDependencyInt.times(int)` javadoc says it delegates to a non-existent `PileInt#multiplyRO` (body correctly calls `PileInt.multiply`); stale `@link`. Noted in the `specialized_int` doc as a wart. The `Recomputations.isRecomputationfinished` misspelling (lowercase `f`) is likewise left as a wart (fixed the `static` defect, see PB-21, but didn't rename the public method).
 
@@ -188,6 +152,36 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 - **Where:** `src/pile/specialized_double/PileDouble.java`, `divideRW(ReadWriteDependency<Double>, double)`.
 - **Symptom:** delegated to `multiplyRO(op, 1/value)` (no write-back) despite the `RW` name/javadoc.
 - **Fixed:** delegates to `multiplyRW(op, 1/value)` (installs the bijection write-back).
+
+### PB-15 — dead `vl=null` from a missing `else` (bounds re-clamp)
+- **Where:** `src/pile/builder/AbstractIndependentBuilder.java`, `build()`.
+- **Symptom:** `if(value.isDefaultSealed()) vl=null;` was immediately overwritten by an unconditional `vl = e->value.set(value.get())`, so a default-sealed (read-only) value still got a re-clamp listener.
+- **Fixed:** added the missing `else` so `vl` stays `null` for default-sealed values. (The enclosing `if(value.isSealed())` arm's reachability at build time is unchanged/uncertain per the original note, but the branch is now correct if reached.)
+
+### PB-20 — inverted null-guard `_thisDependsOn==null && !…contains(d)`
+- **Where:** `src/pile/impl/PileImpl.java`, `dependencyBeginsChanging`/`escalateDependencyChange`/`dependencyEndsChanging`.
+- **Symptom:** the "d is not a dependency" diagnostic guard was inverted — non-null short-circuited to false (never warned); null would NPE on `.contains`.
+- **Fixed:** `==null` → `!=null` in all three (a `System.err` diagnostic; now fires correctly, no NPE risk).
+
+### PB-31 — `PrefInterop.rememberEnum` `STORE_NULL` stored nothing
+- **Where:** `src/pile/interop/preferences/PrefInterop.java`, `rememberEnum.storeLastValue`.
+- **Symptom:** `case STORE_NULL: s=""; return;` returned before `node.put`, so it persisted nothing.
+- **Fixed:** `return` → `break`, so `""` is stored (recall already maps `""`→null). Part of the partial `STORE_NULL` support (see PB-32).
+
+### PB-32 — `PrefInterop.rememberString` `STORE_NULL` partial support (per developer design)
+- **Where:** `src/pile/interop/preferences/PrefInterop.java`, `rememberString.storeLastValue`/`recallLastValue`.
+- **Symptom:** `case STORE_NULL: assert false; return;` — silently no-op'd with assertions off.
+- **Fixed:** `STORE_NULL` now stores null as `""`; real all-`'\0'` values (incl. `""`) are escaped with a trailing `'\0'` on store and un-escaped on recall, so they don't collide with null's `""` encoding. Added the `isAllNul` fast early-exit helper; updated the `NullBehavior.STORE_NULL` javadoc to document partial support (primitives still reject it). Forbidding/redirecting null is left to client correctors.
+
+### PB-36 — `ImplSwitchableRelation.disable()` enabled on the first suppressor
+- **Where:** `src/pile/relation/ImplSwitchableRelation.java`, `disable()`.
+- **Symptom:** acquiring the first suppressor read `shouldBeEnabled` and pushed it into `isEnabled` (true when it should be on) instead of forcing disabled.
+- **Fixed:** on first suppressor, set `v=false` (disable); subsequent acquires stay `null` (no-op). Mirrors the `sbeChanged` handler's `if(suppressors>0) v=false`.
+
+### PB-41 — `PileString.RightmostFulfilling.NOT_NULL` was a `LeftmostFulfilling`
+- **Where:** `src/pile/specialized_String/PileString.java`.
+- **Symptom:** the static `NOT_NULL` inside `RightmostFulfilling` was declared/constructed as `LeftmostFulfilling`.
+- **Fixed:** type + constructor → `RightmostFulfilling` (field name unchanged; not a rename). `RightmostFulfilling` has the matching `(Predicate, String)` constructor.
 
 ## Author-flagged uncertainties (in-source TODOs — not necessarily bugs)
 - **`ISealPileBuilder.setupWritableRateLimited`** — `src/pile/builder/ISealPileBuilder.java` carries the author's note *"Invalidating the buffer directly does not work yet"* (acknowledged-incomplete behavior).

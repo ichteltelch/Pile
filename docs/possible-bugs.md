@@ -56,12 +56,6 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** mixed (mostly doc/cosmetic). **Impact:** misleading docs; the `accept`/`set` one is worth a glance.
 - **Found:** builder wave.
 
-### PB-26 (suspicious) — deferred/queued bracket nop-metadata mixes up keep/remain
-- **Where:** `src/pile/aspect/bracket/DeferredValueBracket.java` and `QueuedValueBracket.java`.
-- **Symptom:** `openIsNop` returns `keep==null & !backDoesOpen` but `open`'s return is driven by `remain` (not `keep`); `closeIsNop` returns `remain==null & !backDoesClose` but `close`'s return is driven by `keep`. The keep/remain guards appear swapped, so the nop metadata can be wrong when exactly one of keep/remain is non-null. Duplicated across both twins (possibly intentional, but suspicious).
-- **Confidence:** low-medium. **Impact:** the framework's nop-optimization may skip/keep a bracket incorrectly in edge cases.
-- **Found:** `DeferredValueBracket` + `QueuedValueBracket` docs.
-
 > Minor (not logged as PB): `ReadDependencyInt.times(int)` javadoc says it delegates to a non-existent `PileInt#multiplyRO` (body correctly calls `PileInt.multiply`); stale `@link`. Noted in the `specialized_int` doc as a wart. The `Recomputations.isRecomputationfinished` misspelling (lowercase `f`) is likewise left as a wart (fixed the `static` defect, see PB-21, but didn't rename the public method).
 
 ## Fixed (pending verification — 2026-06-12)
@@ -182,6 +176,12 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 - **Where:** `src/pile/specialized_String/PileString.java`.
 - **Symptom:** the static `NOT_NULL` inside `RightmostFulfilling` was declared/constructed as `LeftmostFulfilling`.
 - **Fixed:** type + constructor → `RightmostFulfilling` (field name unchanged; not a rename). `RightmostFulfilling` has the matching `(Predicate, String)` constructor.
+
+### PB-26 — deferred/queued bracket `*IsNop` + javadoc swapped `keep`/`remain`
+- **Where:** `src/pile/aspect/bracket/DeferredValueBracket.java` and `QueuedValueBracket.java` (identical twins).
+- **Symptom:** per the developer's semantics — **`remain`** governs `open()` ("the bracket should remain installed on the owner"), **`keep`** governs `close()` ("the owner should keep the reference despite an invalid value") — the `open()`/`close()` bodies were already **correct**, but the constructor javadoc and the two `*IsNop` methods used the opposite field: `openIsNop()` checked `keep` (open is governed by `remain`); `closeIsNop()` checked `remain` (close is governed by `keep`). So the nop-optimization could classify open/close based on the wrong predicate.
+- **Fixed:** `openIsNop` → `remain==null & !backDoesOpen`; `closeIsNop` → `keep==null & !backDoesClose`; constructor javadoc swapped (`keep`↔close, `remain`↔open; fixed the "USed" typo). Applied to both twins.
+- **Also fixed (developer-confirmed):** the constructor's `obsoleteOn = keep!=null || back.canBecomeObsolete() ? … : null` gate was the same swap — changed to `remain!=null || back.canBecomeObsolete()`. Rationale: a non-null `remain` means `open()` can decline to remain, so the bracket *can* become obsolete and the per-owner tracking map must be allocated.
 
 ## Author-flagged uncertainties (in-source TODOs — not necessarily bugs)
 - **`ISealPileBuilder.setupWritableRateLimited`** — `src/pile/builder/ISealPileBuilder.java` carries the author's note *"Invalidating the buffer directly does not work yet"* (acknowledged-incomplete behavior).

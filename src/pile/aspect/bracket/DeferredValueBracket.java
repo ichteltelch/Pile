@@ -33,10 +33,10 @@ public class DeferredValueBracket<E, O> implements ValueBracket<E, O>{
 	 * @param queue The {@link SequentialQueue} used for running the methods of the backing {@link ValueBracket}
 	 * @param filter Used to decide whether to actually schedule something on the queue. Most useful for filtering out <code>null</code> values, see {@link #NON_NULL}.
 	 * If you pass <code>null</code> here, no filtering is done.
-	 * @param keep Used to compute the return value of the {@link #open(Object, Object)} method. If you pass <code>null</code> here, 
+	 * @param keep Used to compute the return value of the {@link #close(Object, Object)} method. If you pass <code>null</code> here,
+	 * {@link #close(Object, Object)} will always return <code>false</code>
+	 * @param remain Used to compute the return value of the {@link #open(Object, Object)} method. If you pass <code>null</code> here,
 	 * {@link #open(Object, Object)} will always return <code>true</code>
-	 * @param remain USed to compute the return value of the {@link #close(Object, Object)} method. If you pass <code>null</code> here, 
-	 * {@link #close(Object, Object)} will always return <code>false</code> 
 	 */
 	public DeferredValueBracket(
 			ValueBracket<E, O> back, 
@@ -52,7 +52,7 @@ public class DeferredValueBracket<E, O> implements ValueBracket<E, O>{
 		this.remain=remain;
 		this.backDoesOpen = !back.openIsNop();
 		this.backDoesClose = !back.closeIsNop();
-		this.obsoleteOn = keep!=null || back.canBecomeObsolete()? new ConcurrentHashMap<O, Object>():null;
+		this.obsoleteOn = remain!=null || back.canBecomeObsolete()? new ConcurrentHashMap<O, Object>():null;
 	}
 	@Override
 	public boolean canBecomeObsolete() {
@@ -78,8 +78,8 @@ public class DeferredValueBracket<E, O> implements ValueBracket<E, O>{
 	public boolean isInheritable() {
 		return back.isInheritable();
 	}
-	@Override public boolean openIsNop() {return keep==null & !backDoesOpen;}
-	@Override public boolean closeIsNop() {return remain==null & ! backDoesClose;}
+	@Override public boolean openIsNop() {return remain==null & !backDoesOpen;}
+	@Override public boolean closeIsNop() {return keep==null & ! backDoesClose;}
 	
 	public static class ValueOnly<V> extends DeferredValueBracket<V, Object> implements ValueOnlyBracket<V>{
 

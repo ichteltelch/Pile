@@ -24,9 +24,9 @@ Both mechanisms exist in the same per-type families (bool / int / double / Strin
 | `DELETE` | `node.remove(key)` — drop the entry. |
 | `IGNORE` | Leave the store untouched (the `Independent` itself stays `null`). **This is the default** whenever the passed `NullBehavior` argument is itself `null` (every factory does `nb = _nb==null ? IGNORE : _nb`). |
 | `STORE_DEFAULT` | Substitute the `defaultValue` and store that. |
-| `STORE_NULL` | "Store a `null` reference anyway" — **unsupported**; the primitive/typed factories throw `IllegalArgumentException` up front (see gotchas for the String/enum exceptions). |
+| `STORE_NULL` | "Store a `null` reference anyway." Primitive/typed factories **reject it** with `IllegalArgumentException`. The **`String`/`Enum` rememberers partially support it**: `Enum` stores `null` as the empty string; `String` stores it as a reserved escape marker (see Caveats). |
 
-`STORE_NULL` is rejected eagerly by `boolPreference`, `doublePreferenceBuilder`, `intPreferenceBuilder`, `stringPreference`, `enumPreference`, and the corresponding `rememberBool/Double/Int` factories. `rememberString` and `rememberEnum` do **not** reject it at construction (they handle it in `storeLastValue` instead — buggily; see Tech debt).
+`STORE_NULL` is rejected eagerly by `boolPreference`, `doublePreferenceBuilder`, `intPreferenceBuilder`, `stringPreference`, `enumPreference`, and the corresponding `rememberBool/Double/Int` factories. `rememberString` and `rememberEnum` do **not** reject it — they emulate it via an empty-string encoding (see Caveats).
 
 ## The `remember*` factory family (`LastValueRememberer`s)
 
@@ -69,7 +69,8 @@ Type-specific notes:
 
 ## Caveats & gotchas
 
-- **`STORE_NULL` is a trap.** Most factories reject it at construction. Where they don't (`rememberString`, `rememberEnum`), the runtime handling is broken (see Tech debt) — never use `STORE_NULL`.
+- **`STORE_NULL` is only for `String`/`Enum` rememberers.** Every primitive factory (and `enumPreference`/`stringPreference`) rejects it with `IllegalArgumentException`. `Enum` rememberers store `null` as the empty string (enum names are never empty). `String` rememberers store it as a reserved escape marker (next bullet).
+- **`java.util.prefs` forbids `U+0000`, so all Preferences-backed `String` values are backslash-escaped.** `Preferences.put` throws `IllegalArgumentException: Value contains code point U+0000` for *any* string containing `'\0'`. So `rememberString`, `stringPreference`, and `PreferencesBackedValue` escape on store / unescape on load via `PrefInterop.escapeNul`/`unescapeNul` (gated by `indexOf` so a string with no `'\0'`/backslash is untouched): a backslash → `\/` (**not** `\\`, which would double on every re-escape), a NUL → `\0`. Under `STORE_NULL`, a `null` is the reserved marker `\-` — a sequence `escapeNul` can never produce, so it never collides with a real value (including `""`). An invalid escape (e.g. a hand-edited store) is left verbatim, never corrupted. (Caught by `tests/pile/tests/PileFixTests` — an interim trailing-`'\0'` escape threw at `node.put`.)
 - **Storing happens synchronously on the writing thread**, inline in the value/`storeLastValue` call. For a `Preferences` backing this touches the prefs subsystem on every change.
 - **Only `rememberBool` has the reactive `(ReadListenDependency…)` overload.** If you need a value-driven node or default for int/double/String/enum, you must build it yourself.
 - **`enumPreference` does not catch resolver exceptions** the way `rememberEnum` does; a malformed stored enum name will propagate the `resolver`'s exception into the prefs listener / restore path.
@@ -85,7 +86,7 @@ Type-specific notes:
 
 ## Tech debt / warts
 
-- **`STORE_NULL` mishandling in `rememberString` / `rememberEnum`.** Unlike the primitive factories, these accept `STORE_NULL` at construction. In `rememberString.storeLastValue`, the `STORE_NULL` case does `assert false; return;` — so with assertions off it silently does nothing (never reaches the `node.put`). In `rememberEnum.storeLastValue`, the `STORE_NULL` case sets `s = ""` and then **`return`s immediately**, so the computed `s` is never written (the trailing `node.put(key, s)` is dead for that path). Both are inconsistent with the enum-mechanism's own recall (which maps `""`→`null`). See `SUSPECTED_BUGS`.
+- **(Resolved) `STORE_NULL` for `String`/`Enum`.** Formerly `rememberString.storeLastValue` did `assert false; return;` (a silent no-op with assertions off) and `rememberEnum.storeLastValue` set `s=""` then `return`ed before the `node.put` (dead write). `Enum` now stores `""` for `null`; `String` stores the reserved `\-` marker and backslash-escapes `'\0'` (which `Preferences` forbids) — see Caveats. Verified by `PileFixTests`.
 - **Two parallel Preferences integrations** (`remember*` vs `*preference`) with overlapping names invite picking the wrong one; the distinction (aspect vs standalone reactive value) is not obvious from the call site.
 - **Reactive overload asymmetry:** only `rememberBool` has the `ReadListenDependency` node/default form; the other types don't, for no documented reason.
 - **No key null-checks** and inconsistent node null-checks (`Objects.requireNonNull(node)` only on one overload).

@@ -82,6 +82,7 @@ You may still **`set` a depender `D` while its dependency `X` is invalid** ("wri
 - Recomputation is gated by *both* the transaction counter  and `allDependenciesValid` ; a value with no open client transaction can still refuse to recompute because a dependency is invalid.
 - The `_transactionReasons` tracking and `creationTrace` only exist when `DebugEnabled.DE` is true; don't rely on them in production builds.
 - Brackets (`open`/`close`) fire from inside transaction/validity transitions while the `mutex` is held — see the brackets doc (TODO) for what you must not do there.
+- A transaction batches the reactions of **dependers** (they recompute once, at commit), **not** the transacting value's own direct `ValueListener`s. To observe coalescing, watch a *downstream* value, not the one you're writing. (Confirmed by the transaction check in `tests/pile/tests/PileCoreTests`.)
 
 ## To verify with a characterization test (before treating as guaranteed)
 

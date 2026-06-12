@@ -117,7 +117,9 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 ### PB-32 — `PrefInterop.rememberString` `STORE_NULL` partial support (per developer design)
 - **Where:** `src/pile/interop/preferences/PrefInterop.java`, `rememberString.storeLastValue`/`recallLastValue`.
 - **Symptom:** `case STORE_NULL: assert false; return;` — silently no-op'd with assertions off.
-- **Fixed:** `STORE_NULL` now stores null as `""`; real all-`'\0'` values (incl. `""`) are escaped with a trailing `'\0'` on store and un-escaped on recall, so they don't collide with null's `""` encoding. Added the `isAllNul` fast early-exit helper; updated the `NullBehavior.STORE_NULL` javadoc to document partial support (primitives still reject it). Forbidding/redirecting null is left to client correctors.
+- **Fixed:** all Preferences-backed `String` values are now backslash-escaped (`\`→`\/`, `\0`→`\0`; gated by `indexOf`) so any embedded `'\0'` round-trips — **`java.util.prefs` forbids `U+0000`**, which an interim trailing-`'\0'` escape tripped over (caught by `PileFixTests`). Under `STORE_NULL`, `null` is a reserved `\-` marker the escape can never produce, so a real `""` stays distinct. Applied to `rememberString`, `stringPreference`, and `PreferencesBackedValue`; invalid/hand-edited escapes are left verbatim. `NullBehavior.STORE_NULL` javadoc updated; primitives still reject it. Forbidding/redirecting null is left to client correctors.
+- **Broader than STORE_NULL:** the `\0`-escape also makes `stringPreference`/`PreferencesBackedValue` safe for *any* `\0`-containing value (previously a `RuntimeException` on write), independent of the null policy.
+- **Test:** `tests/pile/tests/PileFixTests` (`pb31_32_prefStoreNull`, `prefNulEscape`).
 
 ### PB-36 — `ImplSwitchableRelation.disable()` enabled on the first suppressor
 - **Where:** `src/pile/relation/ImplSwitchableRelation.java`, `disable()`.

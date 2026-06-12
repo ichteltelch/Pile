@@ -44,12 +44,13 @@ public class PrefInterop {
 		IGNORE,
 		/**
 		 * Attempt to store a <code>null</code> reference anyway.
-		 * <p>Only partially supported: for {@code String} and {@code Enum} preferences a
-		 * <code>null</code> is stored as the empty string and recalled as <code>null</code>. For
-		 * {@code String}, real all-<code>'\0'</code> values (including the empty string) get a
-		 * trailing <code>'\0'</code> appended on storage (and removed on loading) so they don't
-		 * collide with that encoding. Primitive ({@code boolean}/{@code int}/{@code double})
-		 * preferences still reject it with an {@link IllegalArgumentException}.
+		 * <p>Only partially supported: primitive ({@code boolean}/{@code int}/{@code double})
+		 * preferences reject it with {@link IllegalArgumentException}. {@code Enum} rememberers store
+		 * <code>null</code> as the empty string (enum names are never empty, so no collision).
+		 * {@code String} rememberers store it as a reserved escape marker distinct from every real
+		 * value — {@code String} values are backslash-escaped (so an embedded <code>'\0'</code>,
+		 * which {@code java.util.prefs} forbids, round-trips), and the marker is a sequence the escape
+		 * never produces.
 		 * <p>To forbid or redirect <code>null</code>s, add a corrector instead.
 		 */
 		STORE_NULL,
@@ -65,17 +66,58 @@ public class PrefInterop {
 	 */
 	private static final BiPredicate<? super Double, ? super Double> STRING_EQUIVALENCE = (a, b)->a==b?true:(a==null|b==null)?false:Objects.equals(a.toString(), b.toString());
 	/**
-	 * Fast early-exit test for whether {@code s} consists entirely of <code>'\0'</code> characters
-	 * (vacuously true for the empty string). Optimized for the common case that it does not — a
-	 * typical string exits on its first character. Used by the {@code String}
-	 * {@link NullBehavior#STORE_NULL} encoding to escape such strings with a trailing
-	 * <code>'\0'</code> so they don't collide with the empty-string encoding of <code>null</code>.
+	 * Stored form of a <code>null</code> reference under {@link NullBehavior#STORE_NULL} for the
+	 * {@code String} rememberer: a backslash followed by a non-escape char. {@link #escapeNul} only
+	 * ever emits <code>\/</code> and <code>\0</code>, so it can never produce this sequence — hence
+	 * the marker can never collide with an escaped real value (including the empty string).
 	 */
-	private static boolean isAllNul(String s) {
-		for(int i=0; i<s.length(); i++)
-			if(s.charAt(i)!='\0')
-				return false;
-		return true;
+	private static final String NULL_MARKER = "\\-";
+	/**
+	 * Escape a string for storage in a {@link Preferences} value, which forbids <code>'\0'</code>
+	 * (U+0000) — {@code Preferences.put} throws {@link IllegalArgumentException} for any string
+	 * containing it. Backslash is the escape character: a backslash is written as <code>\/</code>
+	 * and a NUL as <code>\0</code>. (Backslash escapes to <code>\/</code>, not <code>\\</code>, so
+	 * re-escaping grows the string linearly rather than doubling the backslashes.) The output is printable (so it stays
+	 * prefs/XML-safe). Gated by a quick {@link String#indexOf} so the common case (no
+	 * <code>'\0'</code> and no backslash) is returned unchanged.
+	 */
+	static String escapeNul(String s) {
+		if(s.indexOf('\0')<0 && s.indexOf('\\')<0)
+			return s;
+		StringBuilder b = new StringBuilder(s.length()+4);
+		for(int i=0; i<s.length(); i++) {
+			char c = s.charAt(i);
+			if(c=='\\')
+				b.append("\\/");
+			else if(c=='\0')
+				b.append("\\0");
+			else
+				b.append(c);
+		}
+		return b.toString();
+	}
+	/**
+	 * Inverse of {@link #escapeNul(String)}. A backslash that does <em>not</em> form a valid escape
+	 * (<code>\/</code> or <code>\0</code>) — e.g. a value written before escaping existed, or a
+	 * hand-edited preferences store — is left exactly as-is (the backslash and the following
+	 * character are both kept), never dropped or "corrected".
+	 */
+	static String unescapeNul(String s) {
+		if(s.indexOf('\\')<0)
+			return s;
+		StringBuilder b = new StringBuilder(s.length());
+		for(int i=0; i<s.length(); i++) {
+			char c = s.charAt(i);
+			if(c=='\\' && i+1<s.length()) {
+				char n = s.charAt(i+1);
+				if(n=='/') { b.append('\\'); i++; }
+				else if(n=='0') { b.append('\0'); i++; }
+				else b.append('\\');
+			} else {
+				b.append(c);
+			}
+		}
+		return b.toString();
 	}
 	/**
 	 * Make an {@link IndependentBool} representing a boolean value stored in a {@link Preferences} node
@@ -328,7 +370,7 @@ public class PrefInterop {
 					return;
 				try {
 					inChange.set(true);
-					strongRet.set(node.get(key, defaultValue));
+					strongRet.set(unescapeNul(node.get(key, defaultValue)));
 				}finally {
 					inChange.set(changing);
 				}
@@ -336,7 +378,7 @@ public class PrefInterop {
 		};
 		node.addPreferenceChangeListener(pcl);
 		weakRet.setCleanupAction(()->node.removePreferenceChangeListener(pcl));
-		ret.set(node.get(key, defaultValue));
+		ret.set(unescapeNul(node.get(key, defaultValue)));
 		ret.addValueListener(e->{
 			Boolean changing = inChange.get();
 			if(Boolean.TRUE.equals(changing))
@@ -357,7 +399,7 @@ public class PrefInterop {
 						break;
 					}
 				}
-				node.put(key, value);
+				node.put(key, escapeNul(value));
 			}finally {
 				inChange.set(changing);
 			}
@@ -651,25 +693,21 @@ public class PrefInterop {
 						e=defaultValue;
 						break;
 					case STORE_NULL:
-						e="";
-						break;
+						node.put(key, NULL_MARKER);
+						return;
 					}
-				}else if(nb==NullBehavior.STORE_NULL && isAllNul(e)) {
-					e=e+"\0";
 				}
-				node.put(key, e);
+				node.put(key, escapeNul(e));
 			}
 
 			@Override
 			public String recallLastValue() {
-				String s = node.get(key, defaultValue);
-				if(nb==NullBehavior.STORE_NULL && s!=null) {
-					if(s.isEmpty())
-						return null;
-					if(isAllNul(s))
-						return s.substring(0, s.length()-1);
-				}
-				return s;
+				String s = node.get(key, null);
+				if(s==null)
+					return defaultValue;
+				if(nb==NullBehavior.STORE_NULL && s.equals(NULL_MARKER))
+					return null;
+				return unescapeNul(s);
 			}
 
 		};

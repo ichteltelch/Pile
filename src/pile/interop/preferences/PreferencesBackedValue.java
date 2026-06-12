@@ -110,12 +110,14 @@ AlwaysValid<T>
 			return false;
 		currentValue = value;
 		currentString = encode.apply(value);
-		node.put(key, currentString);
+		node.put(key, PrefInterop.escapeNul(currentString));
 		notifyAll();
 		return true;
 	}
 	private synchronized boolean _read() {
 		String newString = node.get(key, null);
+		if(newString != null)
+			newString = PrefInterop.unescapeNul(newString);
         if(newString == null) {
             currentValue = defaultValue.get();
             currentString = encode.apply(currentValue);

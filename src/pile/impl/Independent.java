@@ -59,7 +59,7 @@ CorrigibleValue<E>,
 RemembersLastValue,
 HasInfluencers
 {
-	final static Logger log=Logger.getLogger("Indepednent");
+	final static Logger log=Logger.getLogger("Independent");
 
 	/**
 	 * 

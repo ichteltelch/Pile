@@ -41,7 +41,7 @@ public interface LastValueRememberSuppressible {
 	SUPPRESS_LAST_VALUE_REMEMBERING_ADD=LastValueRememberSuppressible::suppressRememberLastValues;
 	/**
 	 * Method handle for adding a several {@link Suppressor}s newly generated 
-	 * from a collection of {@link AutoValidationSuppressible}s
+	 * from a collection of {@link LastValueRememberSuppressible}s
 	 * to a given {@link SuppressMany}
 	 */
 	public static final BiConsumer<Iterable<? extends LastValueRememberSuppressible>, SuppressMany> 

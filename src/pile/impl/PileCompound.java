@@ -68,8 +68,8 @@ public abstract class PileCompound {
 	 * @param ret the value to use. If this is <code>null</code>, a {@link Hub} will be created
 	 * @param recompute How to recompute the head.
 	 *  If this is <code>null</code>, {@link PileCompound#defaultRecomputeHead} is used.
-	 * @param changed An optional {@link PileList} to be added to the head
-	 * @param validityChanged An optional {@link PileList} to be added to the head's {@link PileImpl#validity() validity}.
+	 * @param changed An optional {@link ValueListener} to be added to the head
+	 * @param validityChanged An optional {@link ValueListener} to be added to the head's {@link PileImpl#validity() validity}.
 	 * @param parent What should go into the {@link PileImpl#owner} field of the head.
 	 * @return
 	 */

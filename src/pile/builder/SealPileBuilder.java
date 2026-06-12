@@ -2,7 +2,7 @@ package pile.builder;
 
 import pile.impl.SealPile;
 /**
- * Fixed point class for actually implementing the {@link IIndependentBuilder} interface 
+ * Fixed point class for actually implementing the {@link ISealPileBuilder} interface
  * with a concrete type
  * @author bb
  *

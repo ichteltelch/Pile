@@ -150,10 +150,10 @@ public class Piles {
 		return ret;
 	}
 	/**  @see #constant(Object) */
-	public static <E> ConstantBool constant(Boolean value){
+	public static ConstantBool constant(Boolean value){
 		return new ConstantBool(value);
 	}
-	public static <E> ConstantBool getConstant(boolean value){
+	public static ConstantBool getConstant(boolean value){
 		return value?TRUE:FALSE;
 	}
 	/**  @see #sealedConstant(Object) */
@@ -164,7 +164,7 @@ public class Piles {
 		return ret;
 	}
 	/**  @see #constant(Object) */
-	public static <E> ConstantDouble constant(Double value){
+	public static ConstantDouble constant(Double value){
 		return new ConstantDouble(value);
 	}
 	/**  @see #sealedConstant(Object) */
@@ -175,7 +175,7 @@ public class Piles {
 		return ret;
 	}
 	/**  @see #constant(Object) */
-	public static <E> ConstantInt constant(Integer value){
+	public static ConstantInt constant(Integer value){
 		return new ConstantInt(value);
 	}
 	/**  @see #sealedConstant(Object) */
@@ -186,7 +186,7 @@ public class Piles {
 		return ret;
 	}
 	/**  @see #constant(Object) */
-	public static <E> ConstantString constant(String value){
+	public static ConstantString constant(String value){
 		return new ConstantString(value);
 	}
 	/**  @see #sealedConstant(Object) */
@@ -2387,13 +2387,27 @@ public class Piles {
 	 * Return it from {@link IPileBuilder#recomputeStaged(Function)} to fulfill the recomputation
 	 * with {@link Recomputation#fulfillInvalid()}
 	 */
-	public static final Runnable FULFILL_INVALID=()->{};
+	public static final Runnable FULFILL_INVALID=new FulfillInvalid();
 	/**
 	 * A special value used by {@link AbstractPileBuilder}: 
 	 * Return it from {@link IPileBuilder#recomputeStaged(Function)} to fulfill the recomputation
 	 * with a <code>null</code> value.
 	 */
-	public static final Runnable FULFILL_NULL = ()->{};
+	public static final Runnable FULFILL_NULL = new FulfillNull();
+	/**
+	 * Named singleton type backing {@link #FULFILL_INVALID} — a distinct named class rather than a
+	 * shared empty lambda, so the identity comparison in {@link AbstractPileBuilder} stays robust
+	 * (two {@code ()->{}} lambdas could in principle be merged) and the sentinel prints legibly when debugging.
+	 */
+	private static final class FulfillInvalid implements Runnable {
+		@Override public void run() {}
+		@Override public String toString() {return "Piles.FULFILL_INVALID";}
+	}
+	/** Named singleton type backing {@link #FULFILL_NULL}; see {@link FulfillInvalid}. */
+	private static final class FulfillNull implements Runnable {
+		@Override public void run() {}
+		@Override public String toString() {return "Piles.FULFILL_NULL";}
+	}
 	/**
 	 * A {@link SealedValue} that always holds a <code>null</code> value 
 	 */

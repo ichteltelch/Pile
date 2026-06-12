@@ -86,8 +86,8 @@ implements Iterable<E>{
 		intervalRemoved(0, oldSize-1);
 	}
 	/**
-	 * Clear the list. If the list is nonempty, this removes all elements,
-	 *  {@link ReadDependency#destroy() destroy}s 
+	 * Remove every element for which {@code filter} tests <code>true</code>. For each removed element,
+	 *  {@link ReadDependency#destroy() destroy}s
 	 * the values containing them, possibly fires an event and revalidates the
 	 *  {@link PileCompound#head }
 	 */

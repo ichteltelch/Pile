@@ -1,7 +1,7 @@
 package pile.impl;
 
 /**
- * Concrete implementation of {@link PileList}.
+ * Concrete implementation of {@link AbstractValueList}.
  * @author bb
  *
  * @param <E>

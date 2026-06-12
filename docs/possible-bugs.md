@@ -6,55 +6,19 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 
 ## Open
 
-### PB-3 (doc-only) — `LastValueRememberSuppressible._COLLECTION` javadoc names the wrong type
-- **Where:** `src/pile/aspect/LastValueRememberSuppressible.java` (the `_COLLECTION` method-handle constant).
-- **Symptom:** javadoc mis-names the element type as `AutoValidationSuppressible` (copy-paste); the generics are correct.
-- **Confidence:** high (a doc typo). **Impact:** none at runtime; misleading javadoc.
-- **Found:** `LastValueRememberSuppressible` doc.
+_All triaged — the only un-fixed items left are public-API **renames**, handled via the IDE's rename refactoring (it updates every cross-project reference atomically), not manual edits. See below._
+
+## For IDE rename refactoring (developer)
 
 ### PB-4 — garbled public method names `writableBufferDtSealableString` / `writableWeakBufferDtSealableString`
 - **Where:** `Piles.writableBufferDtSealableString` and `writableWeakBufferDtSealableString`.
-- **Symptom:** these `…String` twins carry a garbled `DtSealable` infix, inconsistent with every other `…String` twin (e.g. `writableBufferString` expected). Looks like a copy-paste/rename slip in a **public** API name.
-- **Confidence:** medium-high. **Impact:** ugly/confusing public API; renaming is a breaking change.
-- **Found:** `Piles` index.
-
-### PB-5 (fragile) — `FULFILL_NULL` is an empty lambda identical to `FULFILL_INVALID`
-- **Where:** `Piles.FULFILL_INVALID` and `Piles.FULFILL_NULL`, both `()->{}`.
-- **Symptom:** two indistinguishable empty-lambda sentinels distinguished only by reference identity in `AbstractPileBuilder`. Probably intended, but fragile.
-- **Confidence:** low it's a bug (likely deliberate). **Impact:** subtle if a refactor ever collapses identical lambdas.
-- **Found:** `Piles` index.
-
-### PB-6 (cosmetic) — vestigial unused `<E>` type parameters on constant factories
-- **Where:** `Piles.getConstant` and the `constant(Boolean/Double/Integer/String)` overloads.
-- **Symptom:** declared with an unused `<E>` type parameter. Harmless dead generics.
-- **Confidence:** high (it's dead code). **Impact:** none at runtime.
-- **Found:** `Piles` index.
-
-### PB-8 (cosmetic) — `Independent` logger name misspelled "Indepednent"
-- **Where:** `src/pile/impl/Independent.java`.
-- **Symptom:** the `Logger` is registered under the misspelled category name `"Indepednent"`.
-- **Confidence:** high (typo). **Impact:** none beyond an odd log-category name.
-- **Found:** `Independent` doc.
+- **Symptom:** these `…String` twins carry a garbled `DtSealable` infix, inconsistent with every other `…String` twin (e.g. `writableBufferString` expected). Copy-paste/rename slip in a **public** API name.
+- **Resolution:** IDE rename → e.g. `writableBufferString` / `writableWeakBufferString` (breaking change; do via refactoring).
 
 ### PB-10 — misspelled public API `autoCompundName`
 - **Where:** `src/pile/impl/PileCompound.java` (and every override across the compound/list family).
-- **Symptom:** the abstract method name is missing an 'o' (should be `autoCompoundName`). Baked into the contract and all overrides.
-- **Confidence:** high. **Impact:** permanent public-API wart; renaming is breaking.
-- **Found:** `PileCompound` doc.
-
-### PB-12 (doc-only) — assorted javadoc copy-paste slips
-- `PileList.java` — class javadoc says "Concrete implementation of `PileList`" (self-referential; should be `AbstractValueList`).
-- `AbstractValueList.java` — `removeIf` javadoc copy-pasted from `clear` ("Clear the list…").
-- `PileCompound.java` — `makeHead(...)` javadoc documents its `ValueListener` params as "An optional PileList".
-- **Confidence:** high (doc typos). **Impact:** misleading javadoc only.
-- **Found:** composites wave.
-
-### PB-19 (low / doc) — assorted builder slips
-- `ISealPileBuilder` — `setupBuffer`/`setupWeakBuffer` push the leader via `setter.accept(value)` while the writable twins (`setupWritableBuffer`/`setupWritableWeakBuffer`) use `setter.set(value)`; the `accept`/`set` split may be intentional but looks like a possible copy-paste inconsistency.
-- `SealPileBuilder.java` — class javadoc claims it implements `IIndependentBuilder` (it builds `SealPile`s); copy-paste doc slip.
-- `PileBuilder.java` — `@param value` tag names a parameter declared `v`.
-- **Confidence:** mixed (mostly doc/cosmetic). **Impact:** misleading docs; the `accept`/`set` one is worth a glance.
-- **Found:** builder wave.
+- **Symptom:** the abstract method name is missing an 'o' (should be `autoCompoundName`); baked into the contract and all overrides.
+- **Resolution:** IDE rename `autoCompundName` → `autoCompoundName`. (Same for the leftover `Recomputations.isRecomputationfinished` → `isRecomputationFinished`, per the Minor note below.)
 
 > Minor (not logged as PB): `ReadDependencyInt.times(int)` javadoc says it delegates to a non-existent `PileInt#multiplyRO` (body correctly calls `PileInt.multiply`); stale `@link`. Noted in the `specialized_int` doc as a wart. The `Recomputations.isRecomputationfinished` misspelling (lowercase `f`) is likewise left as a wart (fixed the `static` defect, see PB-21, but didn't rename the public method).
 
@@ -182,6 +146,32 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 - **Symptom:** per the developer's semantics — **`remain`** governs `open()` ("the bracket should remain installed on the owner"), **`keep`** governs `close()` ("the owner should keep the reference despite an invalid value") — the `open()`/`close()` bodies were already **correct**, but the constructor javadoc and the two `*IsNop` methods used the opposite field: `openIsNop()` checked `keep` (open is governed by `remain`); `closeIsNop()` checked `remain` (close is governed by `keep`). So the nop-optimization could classify open/close based on the wrong predicate.
 - **Fixed:** `openIsNop` → `remain==null & !backDoesOpen`; `closeIsNop` → `keep==null & !backDoesClose`; constructor javadoc swapped (`keep`↔close, `remain`↔open; fixed the "USed" typo). Applied to both twins.
 - **Also fixed (developer-confirmed):** the constructor's `obsoleteOn = keep!=null || back.canBecomeObsolete() ? … : null` gate was the same swap — changed to `remain!=null || back.canBecomeObsolete()`. Rationale: a non-null `remain` means `open()` can decline to remain, so the bracket *can* become obsolete and the per-owner tracking map must be allocated.
+
+### PB-3 — `LastValueRememberSuppressible._COLLECTION` javadoc named the wrong element type
+- **Where:** `src/pile/aspect/LastValueRememberSuppressible.java`.
+- **Fixed:** javadoc `{@link AutoValidationSuppressible}s` → `{@link LastValueRememberSuppressible}s` (matches the constant's `Iterable<? extends LastValueRememberSuppressible>` type).
+
+### PB-5 — `FULFILL_INVALID`/`FULFILL_NULL` were identical empty lambdas
+- **Where:** `src/pile/impl/Piles.java`.
+- **Symptom:** two `()->{}` sentinels distinguished only by reference identity in `AbstractPileBuilder` — fragile if a compiler ever merged identical lambdas.
+- **Fixed:** replaced with two distinct **named** singleton classes `FulfillInvalid`/`FulfillNull` (each `implements Runnable`, with a debug-friendly `toString`). Identity comparisons stay robust and the sentinels print legibly.
+
+### PB-6 — vestigial unused `<E>` on constant factories
+- **Where:** `src/pile/impl/Piles.java`.
+- **Fixed:** removed the unused `<E>` from `getConstant(boolean)` and `constant(Boolean|Double|Integer|String)` (the generic `constant(E)`/`constNull()` keep theirs).
+
+### PB-8 — `Independent` logger category misspelled
+- **Where:** `src/pile/impl/Independent.java`.
+- **Fixed:** `Logger.getLogger("Indepednent")` → `"Independent"`.
+
+### PB-12 — javadoc copy-paste slips (composites)
+- **Where:** `PileList.java`, `AbstractValueList.java`, `PileCompound.java`.
+- **Fixed:** `PileList` class javadoc "Concrete implementation of `PileList`" → `AbstractValueList`; `AbstractValueList.removeIf` javadoc rewritten (was copy-pasted from `clear`); `PileCompound.makeHead` `@param changed`/`@param validityChanged` "An optional `PileList`" → "An optional `ValueListener`".
+
+### PB-19 — builder javadoc slips
+- **Where:** `SealPileBuilder.java`, `PileBuilder.java`.
+- **Fixed:** `SealPileBuilder` class javadoc "implementing the `IIndependentBuilder` interface" → `ISealPileBuilder`; `PileBuilder` constructor `@param value` → `@param v` (matches the parameter name).
+- **Not changed (flagged):** the `ISealPileBuilder` `setupBuffer`/`setupWeakBuffer` `setter.accept(value)` vs writable twins' `setter.set(value)` split — possibly intentional (read-only buffers don't need the corrected return value); left for review.
 
 ## Author-flagged uncertainties (in-source TODOs — not necessarily bugs)
 - **`ISealPileBuilder.setupWritableRateLimited`** — `src/pile/builder/ISealPileBuilder.java` carries the author's note *"Invalidating the buffer directly does not work yet"* (acknowledged-incomplete behavior).

@@ -13,7 +13,7 @@ import pile.impl.PileImpl;
  */
 public final class PileBuilder<V extends PileImpl<E>, E> extends AbstractPileBuilder<PileBuilder<V, E>, V, E>{
 	/**
-	 * @param value The value this builder should act on
+	 * @param v The value this builder should act on
 	 */
 	public PileBuilder(V v) {
 		super(v);

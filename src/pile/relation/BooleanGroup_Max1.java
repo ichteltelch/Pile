@@ -53,11 +53,11 @@ public class BooleanGroup_Max1 {
 						active=null;
 					}
 				}
+				if(callback!=null)
+					callback.run();
 			};
 			items.put(elem,  cl);
 			elem.addValueListener(cl);
-			if(callback!=null)
-				callback.run();
 		};
 		cl.runImmediately(true);
 	}

@@ -29,7 +29,7 @@ public interface ReadWriteListenValue<E> extends ReadListenValue<E>, ReadWriteVa
 	
 	
 	/** Delegates to {@link #writableValidBuffer_memo()} */
-	public default Independent<E> validBuffer_memo(){return readOnlyValidBuffer_memo();}
+	public default Independent<E> validBuffer_memo(){return writableValidBuffer_memo();}
 	/**
 	 * Retrieve or make a memoized "valid buffer" obtained from {@link #writableValidBuffer()}.
 	 * You should not use memoization if

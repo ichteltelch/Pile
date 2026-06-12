@@ -20,12 +20,12 @@ public class QueuedValueBracket<E, O> implements ValueBracket<E, O>{
 	public static SequentialQueue getDefaultQueue() {
 		SequentialQueue local = defaultQueue;
 		if(local==null) {
-			local = defaultQueue;
 			synchronized (ValueBracket.class) {
+				local = defaultQueue;
 				if(local==null) {
 					local = new SequentialQueue("Default ValueBracket Queue");
+					defaultQueue = local;
 				}
-				defaultQueue = local;
 			}
 		}
 		return local;

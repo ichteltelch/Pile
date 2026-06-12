@@ -96,7 +96,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 					if(v==null)
 						reco.fulfill(null);
 					else
-						reco.fulfill(-v);
+						reco.fulfill(1/v);
 
 				})
 				.seal(v->{
@@ -145,7 +145,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 					if(v==null)
 						reco.fulfill(null);
 					else
-						reco.fulfill(-v);
+						reco.fulfill(1/v);
 
 				})
 				.seal()
@@ -413,7 +413,7 @@ extends Depender, ReadWriteListenDependencyDouble, PileComparable<Double>{
 	 * @return
 	 */
 	public static SealDouble divideRW(ReadWriteDependency<Double> op, double value) {
-		return multiplyRO(op, 1/value);
+		return multiplyRW(op, 1/value);
 	}
 	public static SealDouble divideRW(ReadWriteDependency<Double> op, ReadListenDependency<? extends Number> value) {
 		Independent<? extends Number> v = value.validBuffer_memo();

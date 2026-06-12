@@ -276,7 +276,7 @@ public class SequentialQueue extends AbstractExecutorService implements Executor
 	 * @return
 	 */
 	public synchronized boolean isQueueWorkerThread() {
-		return Thread.currentThread()==queueWorkerFuture;
+		return Thread.currentThread()==queueWorkerThread;
 	}
 	/**
 	 * Discard all currently queued jobs
@@ -333,8 +333,9 @@ public class SequentialQueue extends AbstractExecutorService implements Executor
 		closed = true;
 		if(queueWorkerFuture!=null)
 			queueWorkerFuture.cancel(true);
-		ArrayList<Runnable> ret = new ArrayList<>(q);
-		q.clear();
+		ArrayList<Runnable> ret = q==null ? new ArrayList<>() : new ArrayList<>(q);
+		if(q!=null)
+			q.clear();
 		notifyAll();
 		return ret;
 	}

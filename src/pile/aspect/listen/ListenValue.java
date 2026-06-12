@@ -185,6 +185,7 @@ public interface ListenValue {
 		 */
 		public ListenerManager(boolean sorting) {
 			this.source=this;
+			this.sorting=sorting;
 		}
 
 		/**

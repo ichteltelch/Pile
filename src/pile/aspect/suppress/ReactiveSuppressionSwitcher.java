@@ -104,6 +104,12 @@ public final class ReactiveSuppressionSwitcher<E> extends SuppressionSwitcher<E>
 	 * @return {@code this}
 	 */
 	public synchronized ReactiveSuppressionSwitcher<E> setSuppressed(ReadListenValue<? extends Boolean> newState) {
+		// NB: the boolean passed to super.setSuppressed matters here only for its side effect of
+		// releasing all currently suppressed objects (and clearing suppressThese). The requested
+		// state is (re)applied on the very next line by _setSuppressedState(newState, true), which
+		// runs the updater and pushes isTrue(newState) into `state`. So passing the current `state`
+		// is intentional/harmless, NOT a copy-paste slip vs. the collection-taking overloads (which
+		// must pass the derived boolean because they suppress a specific collection immediately).
 		super.setSuppressed(state);
 		_setSuppressedState(newState, true);
 		return this;

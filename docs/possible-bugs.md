@@ -2,16 +2,9 @@
 
 A running log of **suspected, unverified** bugs and suspicious code noticed while documenting Pile (via reading + the language server, *not* by running code). **Each needs the developer's judgment before acting — some may well be intentional.** Don't "fix" from this list without confirming.
 
-Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orchestrator appends entries here. Newest findings go under **Open**; move to **Resolved / dismissed** with a note once judged.
+Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orchestrator appends entries under **Open**. Once judged: move to **Fixed (pending verification)** when a code change has been applied (but not yet test-verified), or to **Resolved / dismissed** with a note when it's not a bug.
 
 ## Open
-
-### PB-1 — `ReadWriteListenValue.validBuffer_memo` returns a read-only buffer despite writable intent
-- **Where:** `src/pile/aspect/combinations/ReadWriteListenValue.java`
-- **Symptom:** the javadoc says it delegates to `writableValidBuffer_memo`, but the body calls `readOnlyValidBuffer_memo` (identical to the read-only parent `ReadListenValue`). Consequence: `asDependency` on a *writable* value yields a **read-only** memoized buffer.
-- **Likely cause:** copy-paste from the read-only parent.
-- **Confidence:** medium-high. **Impact:** writes against the buffer-as-dependency are silently unsupported where writable was expected.
-- **Found:** combinations wave (`ReadListenValue` + `ReadWriteListenValue` docs).
 
 ### PB-2 — `RunnableSoftReference extends WeakReference` (soft vs weak mismatch)
 - **Where:** the association / reference machinery around `pile.aspect.HasAssociations` (a class named `RunnableSoftReference`; confirm the exact location).
@@ -99,65 +92,11 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** high (clearly inverted logic). **Impact:** latent — the value almost always has `_thisDependsOn` non-null when these run, so the broken branch is a dead/incorrect diagnostic rather than a live crash.
 - **Found:** `Recomputer` doc (opportunistic).
 
-### PB-21 — `Recomputations` convenience methods declared non-`static` (uncallable)
-- **Where:** `Recomputations.java` — the recomputation-forwarding helper methods (plus the misspelled `isRecomputationfinished`).
-- **Symptom:** the recomputation-forwarding helpers (`fulfillInvalid`, `fulfillRestoreOldValue`, `restoreOldValue`, `fulfillNull`, `getOldValue`, `forgetOldValue`, `isRecomputationfinished`, `hasOldValue`, `queryChangedDependencies`) are declared **non-static** on an otherwise all-static class with no public constructor/instance — so they're effectively uncallable. Almost certainly meant to be `static`. Also `isRecomputationfinished` is misspelled (lowercase `f`).
-- **Confidence:** medium-high. **Impact:** dead/uncallable helper API.
-- **Found:** `Recomputations` doc.
-
-### PB-22 — `ListenerManager(boolean sorting)` drops its argument
-- **Where:** `src/pile/aspect/listen/ListenValue.java` (the `ListenerManager` nested class).
-- **Symptom:** the `ListenerManager(boolean sorting)` constructor never assigns `this.sorting`, so the argument is silently dropped and the field stays at its default `false`. `new ListenerManager(true)` therefore behaves like `new ListenerManager()` instead of enabling priority-sorted firing.
-- **Confidence:** high (dropped constructor parameter). **Impact:** sorted listener firing can't be enabled via that constructor.
-- **Found:** `ListenValue` doc.
-
-### PB-23 — rate-limited `MultiListenValue` never propagates the collected sources
-- **Where:** `src/pile/aspect/listen/ConcreteMultiListenValue.java`.
-- **Symptom:** in `rateLimited(careAboutSources=true)` mode, the firing branch ignores the accumulated `MultiEvent` and fires `new ValueEvent(manager.getValueEventSource())`, so the collected upstream sources are never propagated — contradicting the `MultiListenValue.rateLimited` javadoc and the constructor javadoc. `careAboutSources` is effectively dead.
-- **Confidence:** high. **Impact:** handlers in rate-limited multi-listen mode can't tell which value(s) changed.
-- **Found:** `MultiListenValue` + `ConcreteMultiListenValue` docs.
-
-### PB-24 — any-value bracket opened on the old value is never recorded (leaks)
-- **Where:** `src/pile/impl/AbstractReadListenDependency.java` (`_addAnyValueBracket`, the `else` branch reached when `!valid && oldValid`).
-- **Symptom:** that branch opens the bracket on the old value but guards `activeAnyBracketsOnOld.add(b)` with `if(valid)` — always false there — so the just-opened bracket is never recorded as active and is therefore never closed/transferred. Copy-paste slip from the `valid` branch; the guard should be `if(oldValid)`.
-- **Confidence:** high. **Impact:** an any-value bracket added with `openNow` while only the old value is valid opens but leaks (its `close` never runs).
-- **Found:** `HasBrackets` doc.
-
-### PB-25 — `FilteredBracket.close` guards on the wrong filter
-- **Where:** `src/pile/aspect/bracket/FilteredBracket.java`.
-- **Symptom:** `close`'s null-guard tests `closeFilter != null` but then calls `openFilter.test(value)` (should guard on `openFilter != null`). So `nopOnNullClose` (openFilter==null, closeFilter!=null) throws NPE on close; `nopOnNullOpen` (closeFilter==null) skips the close gate so `back.close` runs even for values `open` filtered out, breaking symmetry. The symmetric factories (`filtered(filter)`, `nopOnNull`) are unaffected, masking it.
-- **Confidence:** high. **Impact:** NPE / broken open-close symmetry for the asymmetric `nopOnNull{Open,Close}` factories.
-- **Found:** `FilteredBracket` doc.
-
 ### PB-26 (suspicious) — deferred/queued bracket nop-metadata mixes up keep/remain
 - **Where:** `src/pile/aspect/bracket/DeferredValueBracket.java` and `QueuedValueBracket.java`.
 - **Symptom:** `openIsNop` returns `keep==null & !backDoesOpen` but `open`'s return is driven by `remain` (not `keep`); `closeIsNop` returns `remain==null & !backDoesClose` but `close`'s return is driven by `keep`. The keep/remain guards appear swapped, so the nop metadata can be wrong when exactly one of keep/remain is non-null. Duplicated across both twins (possibly intentional, but suspicious).
 - **Confidence:** low-medium. **Impact:** the framework's nop-optimization may skip/keep a bracket incorrectly in edge cases.
 - **Found:** `DeferredValueBracket` + `QueuedValueBracket` docs.
-
-### PB-27 — `QueuedValueBracket.getDefaultQueue` has broken double-checked locking
-- **Where:** `src/pile/aspect/bracket/QueuedValueBracket.java`.
-- **Symptom:** the lazy default-queue init re-reads `local = defaultQueue` outside the lock, and inside the `synchronized` block never re-reads the field — so `if(local==null)` tests a stale value and concurrent callers can each create a queue (the assignment overwrites unconditionally). The double-check is non-functional.
-- **Confidence:** high. **Impact:** under contention multiple default `SequentialQueue`s can be created, so brackets meant to share one queue split across queues and lose ordering.
-- **Found:** `QueuedValueBracket` doc.
-
-### PB-28 — `ReactiveSuppressionSwitcher.setSuppressed(ReadListenValue)` ignores its argument
-- **Where:** `src/pile/aspect/suppress/ReactiveSuppressionSwitcher.java`.
-- **Symptom:** `setSuppressed(ReadListenValue newState)` calls `super.setSuppressed(state)`, passing the inherited current `state` field instead of a value derived from `newState`. The collection-taking overloads correctly compute `boolean s = ReadValueBool.isTrue(newState)` and pass `s`. Copy-paste slip — this no-collection overload ignores the requested new state.
-- **Confidence:** medium-high. **Impact:** that overload doesn't apply the requested suppression state.
-- **Found:** `ReactiveSuppressionSwitcher` doc.
-
-### PB-29 — `SynchronizingFilesBackedValue.STRING_CODEC` NPEs on every read/write
-- **Where:** `src/pile/interop/preferences/SynchronizingFilesBackedValue.java`, the `STRING_CODEC` field (`FileCodec<String>`).
-- **Symptom:** `encode` builds `new OutputStreamWriter(useThis, …)` and `decode` builds `new InputStreamReader(useThis, …)` using the raw parameter `useThis`, instead of the locals `os`/`is` it just computed as `useThis==null ? Files.newOutputStream/newInputStream(path) : useThis`. The class always invokes the codec with `useThis==null` (`codec.encode(currentValue, p, null)` in `_write`, `codec.decode(nf, null)` in `_read`), so the stream wrapper gets a `null` and NPEs on every real read/write through the built-in string codec. Copy-paste slip (`useThis` should be `os`/`is`).
-- **Confidence:** high. **Impact:** the default string codec is unusable; any `SynchronizingFilesBackedValue` using `STRING_CODEC` (or `viaString`, if it shares the body) fails at first I/O.
-- **Found:** `SynchronizingFilesBackedValue` doc.
-
-### PB-30 — `SynchronizingFilesBackedValue.autoPoll` null-checks the wrong reference
-- **Where:** `src/pile/interop/preferences/SynchronizingFilesBackedValue.java`, static `autoPoll(Runnable, BooleanSupplier, ScheduledExecutorService, long)`.
-- **Symptom:** the scheduled task does `Runnable deref = pollfRef.get(); if (pollfRef == null) cancel; else deref.run();`. The null-check is on `pollfRef` (the never-null `WeakCleanupWithRunnable` holder) where it should be on `deref` (the weak referent). As written, once the poll runnable is GC'd, `deref` is null and `deref.run()` NPEs instead of self-cancelling; the intended cancellation branch is dead.
-- **Confidence:** high. **Impact:** the auto-poll task cannot self-cancel on GC and throws once its runnable is collected.
-- **Found:** `SynchronizingFilesBackedValue` doc.
 
 ### PB-31 — `PrefInterop.rememberEnum`'s `STORE_NULL` branch is a dead no-op
 - **Where:** `src/pile/interop/preferences/PrefInterop.java`, the `LastValueRememberer<E>.storeLastValue` returned by `rememberEnum`.
@@ -171,47 +110,11 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** medium. **Impact:** inconsistent `STORE_NULL` handling for the String factory; silent no-op in production (assertions off).
 - **Found:** `PrefInterop` doc.
 
-### PB-33 — `SequentialQueue.isQueueWorkerThread` compares a `Thread` to a `Future`
-- **Where:** `src/pile/utils/SequentialQueue.java`, `isQueueWorkerThread()`.
-- **Symptom:** the method compares `Thread.currentThread()` against the `queueWorkerFuture` field (a `Future`, never a `Thread`), so it always returns `false`. The intent was clearly to compare against the `queueWorkerThread` field. (The `ExecutorWithRecentThread.getRecentThread()` path correctly uses `queueWorkerThread`.)
-- **Confidence:** high. **Impact:** any "am I running on the queue's worker thread?" check is always false — reentrancy/affinity logic relying on it is defeated.
-- **Found:** `ExecutorWithRecentThread` / `SequentialQueue` docs.
-
-### PB-34 — `SequentialQueue.shutdownNow` NPEs if called before the first `enqueue`
-- **Where:** `src/pile/utils/SequentialQueue.java`, `shutdownNow()`.
-- **Symptom:** it does `new ArrayList<>(q)` then `q.clear()` with no `q == null` guard, unlike the sibling methods `clearQueue`/`trimQueue`/`isTerminated` which all null-check `q`. The queue field `q` is created lazily on first `enqueue`, so `shutdownNow()` on a never-used queue throws `NullPointerException`.
-- **Confidence:** high. **Impact:** shutting down a freshly-created, never-enqueued `SequentialQueue` throws.
-- **Found:** `SequentialQueue` doc.
-
-### PB-35 — `BooleanGroup_Max1.afterChange` callback never fires on value changes
-- **Where:** `src/pile/relation/BooleanGroup_Max1.java`, `add(...)` / the `afterChange` callback.
-- **Symptom:** `callback.run()` (the `afterChange` hook) is placed inside the `if (cl == null) { … }` member-registration branch instead of in the per-member listener lambda. So it runs **once, at the time a member is first added**, and never again on subsequent `ValueEvent`s — contradicting the `afterChange` javadoc ("invoked when a ValueEvent happens on one of the group's items … run after the ValueEvent has been handled"). The siblings `BooleanGroup_Exactly1` and `BooleanGroup_Min1` correctly invoke the callback inside the listener body.
-- **Confidence:** high (two independent reads; cross-sibling comparison). **Impact:** any code relying on `afterChange` to react to selection changes in a `Max1` group is silently never notified. Copy/placement slip.
-- **Found:** `BooleanGroup_Max1` / `BooleanGroup_Exactly1` docs.
-
 ### PB-36 — `ImplSwitchableRelation.disable()` enables instead of disables on first suppressor
 - **Where:** `src/pile/relation/ImplSwitchableRelation.java`, `disable()`.
 - **Symptom:** when acquiring the **first** suppressor (`suppressors == 1`), the method reads `v = shouldBeEnabled.getValidOrThrow()` and does `if (v != null) setEnabled.accept(v)` — pushing the `shouldBeEnabled` value (i.e. `true` when the relation *should* be on) into `isEnabled`. But a suppressor is now held, so the relation must be **off**. The first-acquire branch never forces `false` for the suppressor it just added (only the already-had-a-suppressor `else` path no-ops, and the release callback correctly re-checks `suppressors == 0`). The parallel `sbeChanged` handler does `if (suppressors > 0) v = false;` — the missing mirror of that here is the defect.
 - **Confidence:** medium-high. **Impact:** acquiring the first `disable()` suppressor while `shouldBeEnabled == true` momentarily flips `isEnabled` to `true` instead of `false`, so the relation briefly (or until the next event) keeps enforcing while supposedly suppressed.
 - **Found:** `ImplSwitchableRelation` doc.
-
-### PB-38 — `PileInt.addRO` drops the operand (constant-add is broken)
-- **Where:** `src/pile/specialized_int/PileInt.java`, `addRO(ReadDependency, int)`.
-- **Symptom:** the body is `op.mapToInt(o -> o==null ? null : +value)` — the unary `+value` ignores the operand `o`, so the result is the **constant `value`** rather than `o + value`. The correct sibling `addRW` uses `Bijection.define(o->o+value, o->o-value)`. **Verified by direct read.** It propagates: `add(ReadDependency,int)` → `addRO`; `subtractRO(op,int)` → `addRO(op,-value)`; `subtract(ReadDependency,int)` → `subtractRO`. So every *read-only* "value ± constant" on an int produces a constant instead of the shifted operand. (The `*RW` variants are correct.)
-- **Confidence:** high (read confirmed). **Impact:** `PileInt.add`/`subtract` with a constant int and a read-only operand silently yield the wrong (constant) reactive value.
-- **Found:** `specialized_int` index.
-
-### PB-39 — `PileDouble.inverse{RW,RO}` compute negation instead of reciprocal
-- **Where:** `src/pile/specialized_double/PileDouble.java`, `inverseRW(...)` and `inverseRO(...)`.
-- **Symptom:** both are named/documented as the reciprocal `1/v` but their **recompute** fulfils `-v` (negation) — a copy-paste slip from the adjacent `negativeRW`/`negativeRO`. In `inverseRW` the *value* is wrong (negation) while the seal *write-back* sets `1/v`, so forward value and write-back also disagree; in `inverseRO` there is no write-back to mask it, so the result is simply always the negation, never the reciprocal.
-- **Confidence:** medium-high (two subagent reads). **Impact:** `inverse` double values read as the negation; `inverseRW` additionally has an inconsistent write-back, so round-trips and displayed value diverge.
-- **Found:** `specialized_double` index / `PileDouble` doc.
-
-### PB-40 — `PileDouble.divideRW` is read-only despite its name/contract
-- **Where:** `src/pile/specialized_double/PileDouble.java`, `divideRW(ReadWriteDependency<Double>, double)`.
-- **Symptom:** it delegates to `multiplyRO(op, 1/value)`, returning a **read-only** wrapper, despite the `RW` name and javadoc promising write-back to the operand. No `Bijection`/write-back is installed (contrast the correct `multiplyRW`/`addRW`, which use `Bijection.define`).
-- **Confidence:** medium-high (subagent read). **Impact:** writes to a `divideRW` value are not redirected to the operand as documented.
-- **Found:** `specialized_double` index.
 
 ### PB-41 — `PileString.RightmostFulfilling.NOT_NULL` is wrongly a `LeftmostFulfilling`
 - **Where:** `src/pile/specialized_String/PileString.java`, the inner class `RightmostFulfilling`, static field `NOT_NULL`.
@@ -219,7 +122,86 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** medium-high (subagent read). **Impact:** low — the constant appears unused; left-biased if anyone does use it.
 - **Found:** `specialized_String` index.
 
-> Minor (not logged as PB): `ReadDependencyInt.times(int)` javadoc says it delegates to a non-existent `PileInt#multiplyRO` (body correctly calls `PileInt.multiply`); stale `@link`. Noted in the `specialized_int` doc as a wart.
+> Minor (not logged as PB): `ReadDependencyInt.times(int)` javadoc says it delegates to a non-existent `PileInt#multiplyRO` (body correctly calls `PileInt.multiply`); stale `@link`. Noted in the `specialized_int` doc as a wart. The `Recomputations.isRecomputationfinished` misspelling (lowercase `f`) is likewise left as a wart (fixed the `static` defect, see PB-21, but didn't rename the public method).
+
+## Fixed (pending verification — 2026-06-12)
+
+Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; awaiting characterization tests / a compile+run pass.
+
+### PB-1 — `ReadWriteListenValue.validBuffer_memo` returned a read-only buffer despite writable intent
+- **Where:** `src/pile/aspect/combinations/ReadWriteListenValue.java`.
+- **Symptom:** the javadoc says it delegates to `writableValidBuffer_memo`, but the body called `readOnlyValidBuffer_memo` (inherited from the read-only parent), so `asDependency` on a writable value yielded a read-only memoized buffer.
+- **Fixed:** `validBuffer_memo()` now calls `writableValidBuffer_memo()` (matches the file-wide pattern of overriding read-only methods to their writable twin).
+
+### PB-21 — `Recomputations` forwarding helpers declared non-`static`
+- **Where:** `src/pile/aspect/recompute/Recomputations.java`.
+- **Symptom:** 13 forwarding helpers (`fulfillInvalid`, `fulfillRestoreOldValue`, `restoreOldValue`, `fulfillNull`, `getOldValue`, `forgetOldValue`, `isRecomputationfinished`, `hasOldValue`, `queryChangedDependencies`, incl. overloads) were `public` instance methods on an otherwise all-static utility class.
+- **Fixed:** added `static` to all 13 (every sibling is static; they use only static state). The `isRecomputationfinished` misspelling was left as a separate wart.
+
+### PB-22 — `ListenerManager(boolean sorting)` dropped its argument
+- **Where:** `src/pile/aspect/listen/ListenValue.java` (`ListenerManager` nested class).
+- **Symptom:** the `(boolean sorting)` constructor never assigned `this.sorting`, so `new ListenerManager(true)` behaved like `new ListenerManager()`.
+- **Fixed:** added `this.sorting=sorting;` (mirrors the `(Object, boolean)` constructor).
+
+### PB-23 — rate-limited `MultiListenValue` discarded the collected sources
+- **Where:** `src/pile/aspect/listen/ConcreteMultiListenValue.java`.
+- **Symptom:** the `careAboutSources=true` branch fired `new ValueEvent(manager.getValueEventSource())`, ignoring the accumulated `MultiEvent e`, so it behaved like `careAboutSources=false`.
+- **Fixed:** now fires `new ValueEvent(e)` — the `MultiEvent` becomes the event's source (it carries `isSource`/`getSources`/`allSources`), honoring the javadoc. (`MultiEvent` is not a `ValueEvent`, so it must be wrapped — an earlier `fireValueChange(e)` attempt was a compile error and was corrected.)
+
+### PB-24 — any-value bracket opened on the old value leaked
+- **Where:** `src/pile/impl/AbstractReadListenDependency.java`, `_addAnyValueBracket` (the `!valid && oldValid` branch).
+- **Symptom:** the branch opened the bracket on the old value but guarded `activeAnyBracketsOnOld.add(b)` with `if(valid)` (always false there), so the bracket was never recorded and never closed.
+- **Fixed:** guard changed to `if(oldValid)` (matches the `valid && oldValid` branch's old-value bookkeeping).
+
+### PB-25 — `FilteredBracket.close` tested the wrong filter
+- **Where:** `src/pile/aspect/bracket/FilteredBracket.java`.
+- **Symptom:** `close` guarded `closeFilter != null` but then called `openFilter.test(value)` — half-updated copy of `open`; would NPE / break symmetry for the asymmetric `nopOnNull{Open,Close}` factories.
+- **Fixed:** `close` now calls `closeFilter.test(value)`. (The bug-log's original suggested repair — changing the guard to `openFilter` — was rejected as it would orphan the `closeFilter` field.)
+
+### PB-27 — `QueuedValueBracket.getDefaultQueue` had broken double-checked locking
+- **Where:** `src/pile/aspect/bracket/QueuedValueBracket.java`.
+- **Symptom:** the in-lock check tested an outside-lock read of `local` (never re-read the field) and assigned `defaultQueue` unconditionally — two racers each created a queue and the second clobbered the first.
+- **Fixed:** rewrote as canonical DCL — re-read `defaultQueue` inside the `synchronized` block, and assign only when newly created.
+
+### PB-29 — `SynchronizingFilesBackedValue.STRING_CODEC` NPE'd on every read/write
+- **Where:** `src/pile/interop/preferences/SynchronizingFilesBackedValue.java`, `STRING_CODEC`.
+- **Symptom:** `encode`/`decode` computed `os`/`is` (= `Files.new…Stream(path)` when the param is null) but then wrapped the raw `useThis` (always null when called) → NPE.
+- **Fixed:** wrap the computed `os`/`is`. (`viaString` delegates to `STRING_CODEC`, so it's fixed too.)
+
+### PB-30 — `SynchronizingFilesBackedValue.autoPoll` null-checked the wrong reference
+- **Where:** `src/pile/interop/preferences/SynchronizingFilesBackedValue.java`, static `autoPoll(...)`.
+- **Symptom:** checked `if(pollfRef==null)` (the never-null holder) instead of `deref` (the weak referent), so it NPE'd after GC instead of self-cancelling.
+- **Fixed:** `if(deref==null)` (mirrors the `condRef` branch above).
+
+### PB-33 — `SequentialQueue.isQueueWorkerThread` compared a `Thread` to a `Future`
+- **Where:** `src/pile/utils/SequentialQueue.java`, `isQueueWorkerThread()`.
+- **Symptom:** `Thread.currentThread() == queueWorkerFuture` (a `Future`) — compiles only because `Thread` isn't `final`; always false at runtime.
+- **Fixed:** compares `queueWorkerThread`. **Note (B1):** the only caller chain is `isDeferThread()` in `JSceneViewerImpl`/`MSceneViewerImpl`, which `find_references` shows is itself **uncalled** (dead code today) — so this fix has no current runtime impact on Biss; it just makes the method correct for when `isDeferThread()` is wired in.
+
+### PB-34 — `SequentialQueue.shutdownNow` NPE'd before the first `enqueue`
+- **Where:** `src/pile/utils/SequentialQueue.java`, `shutdownNow()`.
+- **Symptom:** `new ArrayList<>(q)` with no `q==null` guard; `q` is lazily created on first `enqueue`.
+- **Fixed:** `q==null ? new ArrayList<>() : new ArrayList<>(q)`, then `if(q!=null) q.clear();` (constructor-copy form, per preference).
+
+### PB-35 — `BooleanGroup_Max1.afterChange` callback never fired on changes
+- **Where:** `src/pile/relation/BooleanGroup_Max1.java`, `add(...)`.
+- **Symptom:** `callback.run()` sat in the `if(cl==null)` registration block, firing once at add-time, never on subsequent events (unlike `Exactly1`/`Min1`).
+- **Fixed:** moved `callback.run()` to the end of the listener lambda.
+
+### PB-38 — `PileInt.addRO` dropped the operand
+- **Where:** `src/pile/specialized_int/PileInt.java`, `addRO(ReadDependency, int)`.
+- **Symptom:** `op.mapToInt(o -> o==null ? null : +value)` returned the constant `value` (unary `+`), not `o+value`; propagated through `add`/`subtractRO`/`subtract`.
+- **Fixed:** `+value` → `o+value`.
+
+### PB-39 — `PileDouble.inverse{RW,RO}` computed negation instead of reciprocal
+- **Where:** `src/pile/specialized_double/PileDouble.java`, `inverseRW`/`inverseRO`.
+- **Symptom:** recompute did `reco.fulfill(-v)` (copy-paste from `negative*`); should be `1/v`.
+- **Fixed:** both recompute bodies now `reco.fulfill(1/v)` (the `negative*` methods correctly keep `-v`).
+
+### PB-40 — `PileDouble.divideRW` was read-only despite its `RW` contract
+- **Where:** `src/pile/specialized_double/PileDouble.java`, `divideRW(ReadWriteDependency<Double>, double)`.
+- **Symptom:** delegated to `multiplyRO(op, 1/value)` (no write-back) despite the `RW` name/javadoc.
+- **Fixed:** delegates to `multiplyRW(op, 1/value)` (installs the bijection write-back).
 
 ## Author-flagged uncertainties (in-source TODOs — not necessarily bugs)
 - **`ISealPileBuilder.setupWritableRateLimited`** — `src/pile/builder/ISealPileBuilder.java` carries the author's note *"Invalidating the buffer directly does not work yet"* (acknowledged-incomplete behavior).
@@ -237,5 +219,6 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **PB-14 (intended; residual improvement)** — `AbstractPileBuilder`'s staged recomputer re-invoking the user function on the no-continuation error path. **By design (debugging):** it re-runs so you can breakpoint and step into the function to see why it didn't fulfill. *Residual improvement:* gate it behind a `DebugEnabled` flag so production builds don't double-invoke. (Developer, 2026-06-12.)
 - **PB-16 (intended; possible improvement)** — no-arg `seal` not resetting a previously-set interceptor/`allowInvalidation`. **By design:** a custom interceptor means "seal *with this behavior*"; a later bare `seal` just confirms the value should be sealed, not *how*. *Possible improvement:* make it commutative, so `seal(redirect)` after a default `seal` matches the reverse order. (Developer, 2026-06-12.)
 - **PB-17 (not a bug)** — `AbstractIndependentBuilder` ignoring `seal(.., allowInvalidation=true)`. **Not a bug:** `Independent`s silently ignore invalidation attempts anyway (no invalid state), so the flag is moot. (Developer, 2026-06-12.)
-- **PB-37 (dismissed — verified by reading, not a bug)** — `AbstractRelation.installEnabledListener` calling `getListener().runImmediately()` (no-arg) where subclasses use `runImmediately(true)`. **Verified against `ValueListener.runImmediately`:** the boolean is `inThisThread` (run synchronously on the caller's thread vs. asynchronously via `StandardExecutors.unlimited()`) — **not** an "initial pass" toggle. Both overloads fire the listener with a `null` event, so the base path *does* re-assert the invariant on re-enable; it just runs it on another thread. The originally-feared "won't re-equalize until next operand change" does not hold. (Residual nuance, not a bug: the async re-assert is unordered relative to the enable; flag only if a future ordering issue surfaces.) (Verified by reading, 2026-06-12.)
 - **PB-18 (not a bug)** — writable `field`/`deref` "dropping" a write when there is no inner value. **Not a bug:** silently ignoring an unsupported write is idiomatic in Pile (cf. `Constant`; a field with no inner value has nowhere to write). The inline `//TODO` is about a *different* concern — field↔inner-value sync (see author-flagged). (Developer, 2026-06-12.)
+- **PB-28 (dismissed — verified by reading, not a functional bug)** — `ReactiveSuppressionSwitcher.setSuppressed(ReadListenValue newState)` calling `super.setSuppressed(state)` (the inherited current state) rather than a boolean derived from `newState`. **Verified against `SuppressionSwitcher.setSuppressed(boolean)` (parent):** that method sets `state` *directly* and its main job is the side effect of clearing `suppressThese` + releasing all suppressors — which happens regardless of the boolean. The requested state is then (re)applied on the *next line* by `_setSuppressedState(newState, true)`, which runs the `updater` and pushes `isTrue(newState)` into `state`. Traced all old-state × new-state combinations (incl. the `newState == reactiveState` same-object early-return): final `state` and object-release are identical whether `state` or the derived `s` is passed. The collection overloads *must* pass the derived boolean (they suppress a specific collection immediately) — the no-collection overload doesn't. A clarifying comment was added in-source so it isn't re-flagged. (Verified by reading, 2026-06-12.)
+- **PB-37 (dismissed — verified by reading, not a bug)** — `AbstractRelation.installEnabledListener` calling `getListener().runImmediately()` (no-arg) where subclasses use `runImmediately(true)`. **Verified against `ValueListener.runImmediately`:** the boolean is `inThisThread` (run synchronously on the caller's thread vs. asynchronously via `StandardExecutors.unlimited()`) — **not** an "initial pass" toggle. Both overloads fire the listener with a `null` event, so the base path *does* re-assert the invariant on re-enable; it just runs it on another thread. The originally-feared "won't re-equalize until next operand change" does not hold. (Residual nuance, not a bug: the async re-assert is unordered relative to the enable; flag only if a future ordering issue surfaces.) (Verified by reading, 2026-06-12.)

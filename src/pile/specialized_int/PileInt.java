@@ -644,7 +644,7 @@ extends Depender, ReadWriteListenDependencyInt, PileComparable<Integer>{
 	 * @return
 	 */
 	public static SealInt addRO(ReadDependency<? extends Integer> op, int value) {
-		return op.mapToInt(o->o==null?null:+value);
+		return op.mapToInt(o->o==null?null:o+value);
 	}
 	/**
 	 * Make a reactive integer that computes itself as the sum of 

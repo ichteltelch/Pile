@@ -41,7 +41,7 @@ public class ConcreteMultiListenValue implements MultiListenValue, ListenValue.M
 			boolean careAboutSources) {
 		if(careAboutSources) {
 			listener = ValueListener.rateLimited(coldStartTime, coolDownTime, startCoolingBefore, e->{
-	            manager.fireValueChange(new ValueEvent(manager.getValueEventSource()));
+	            manager.fireValueChange(new ValueEvent(e));
 	        });
 		}else {
 			listener = ValueListener.rateLimited(coldStartTime, coolDownTime, startCoolingBefore, ()->{

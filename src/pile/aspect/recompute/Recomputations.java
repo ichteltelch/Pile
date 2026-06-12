@@ -95,7 +95,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object fulfillInvalid() {
+	public static Object fulfillInvalid() {
 		getCurrentRecomputation().fulfillInvalid();
 		return null;
 	}
@@ -106,7 +106,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object fulfillInvalid(Runnable onSuccess) {
+	public static Object fulfillInvalid(Runnable onSuccess) {
 		getCurrentRecomputation().fulfillInvalid(onSuccess);
 		return null;
 	}
@@ -117,7 +117,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object fulfillRestoreOldValue() {
+	public static Object fulfillRestoreOldValue() {
 		getCurrentRecomputation().fulfillRestoreOldValue();
 		return null;
 	}
@@ -128,7 +128,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object fulfillRestoreOldValue(Runnable onSuccess) {
+	public static Object fulfillRestoreOldValue(Runnable onSuccess) {
 		getCurrentRecomputation().fulfillRestoreOldValue(onSuccess);
 		return null;
 	}
@@ -142,7 +142,7 @@ public class Recomputations {
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
 
-	public Object restoreOldValue() {
+	public static Object restoreOldValue() {
 		getCurrentRecomputation().restoreOldValue();
 		return null;
 	}
@@ -153,7 +153,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object restoreOldValue(Runnable onSuccess) {
+	public static Object restoreOldValue(Runnable onSuccess) {
 		getCurrentRecomputation().restoreOldValue(onSuccess);
 		return null;
 	}
@@ -165,7 +165,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object fulfillNull() {
+	public static Object fulfillNull() {
 		getCurrentRecomputation().fulfill(null);
 		return null;
 	}
@@ -176,7 +176,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object fulfillNull(Runnable onSuccess) {
+	public static Object fulfillNull(Runnable onSuccess) {
 		getCurrentRecomputation().fulfill(null, onSuccess);
 		return null;
 	}
@@ -187,7 +187,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Object getOldValue() {
+	public static Object getOldValue() {
 		return getCurrentRecomputation().oldValue();
 	}
 	/**
@@ -197,7 +197,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public void forgetOldValue() {
+	public static void forgetOldValue() {
 		getCurrentRecomputation().forgetOldValue();
 	}
 	/**
@@ -207,7 +207,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public boolean isRecomputationfinished() {
+	public static boolean isRecomputationfinished() {
 		return getCurrentRecomputation().isFinished();
 	}
 	/**
@@ -217,7 +217,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public boolean hasOldValue() {
+	public static boolean hasOldValue() {
 		return getCurrentRecomputation().hasOldValue();
 	}
 	/**
@@ -227,7 +227,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public Set<? extends Dependency> queryChangedDependencies(boolean copy) {
+	public static Set<? extends Dependency> queryChangedDependencies(boolean copy) {
 		return getCurrentRecomputation().queryChangedDependencies(copy);
 	}
 	/**

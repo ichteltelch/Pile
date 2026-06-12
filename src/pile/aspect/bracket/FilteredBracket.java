@@ -27,7 +27,7 @@ implements ValueBracket<E, O>
     public boolean close(E value, O owner) {
 		if(nopClose)
 			return false;
-	    if(closeFilter!=null &&!openFilter.test(value))
+	    if(closeFilter!=null &&!closeFilter.test(value))
 	        return true;
         return back.close(value, owner);
     }

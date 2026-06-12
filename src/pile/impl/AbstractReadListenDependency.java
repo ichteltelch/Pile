@@ -1609,7 +1609,7 @@ HasInternalLock
 							E oldValue = __oldValue();
 							b.open(oldValue, this);
 							try {
-								if(valid)
+								if(oldValid)
 									activeAnyBracketsOnOld.add(b);
 							}catch(Exception|AssertionError x) {
 								log.log(Level.WARNING, "Exception while opening bracket: ",x);

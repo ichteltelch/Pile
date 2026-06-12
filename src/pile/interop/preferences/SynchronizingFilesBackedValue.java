@@ -82,7 +82,7 @@ AlwaysValid<T>
 				return;
 			try(
 					OutputStream os = useThis==null?Files.newOutputStream(path):useThis;
-					OutputStreamWriter osw = new OutputStreamWriter(useThis, StandardCharsets.UTF_8);
+					OutputStreamWriter osw = new OutputStreamWriter(os, StandardCharsets.UTF_8);
 					BufferedWriter bw = new BufferedWriter(osw);
 					) 
 			{
@@ -94,7 +94,7 @@ AlwaysValid<T>
 		public String decode(Path path, InputStream useThis) throws FileNotFoundException, IOException {
 			try(
 					InputStream is = useThis==null?Files.newInputStream(path):useThis;
-					InputStreamReader isr = new InputStreamReader(useThis, StandardCharsets.UTF_8);
+					InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8);
 					BufferedReader br = new BufferedReader(isr);
 					){
 				StringBuilder result = new StringBuilder();
@@ -444,7 +444,7 @@ AlwaysValid<T>
 				}
 			}
 			Runnable deref = pollfRef.get();
-			if(pollfRef==null)
+			if(deref==null)
 				job.get().cancel(false);
 			else
 				deref.run();

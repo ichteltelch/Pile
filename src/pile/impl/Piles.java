@@ -2693,7 +2693,7 @@ public class Piles {
 		return PileDouble.sb().setupWritableBuffer(leader).build();
 	}
 	/** @see ISealPileBuilder#setupWritableBuffer(ReadListenValue) */
-	public static SealString writableBufferDtSealableString(ReadWriteListenValue<String> leader) {
+	public static SealString writableBufferString(ReadWriteListenValue<String> leader) {
 		return PileString.sb().setupWritableBuffer(leader).build();
 	}
 	
@@ -2744,7 +2744,7 @@ public class Piles {
 		return PileDouble.sb().setupWritableWeakBuffer(leader).build();
 	}
 	/** @see ISealPileBuilder#setupWritableWeakBuffer(ReadListenValue) */
-	public static SealString writableWeakBufferDtSealableString(ReadWriteListenValue<String> leader) {
+	public static SealString writableWeakBufferString(ReadWriteListenValue<String> leader) {
 		return PileString.sb().setupWritableWeakBuffer(leader).build();
 	}
 	

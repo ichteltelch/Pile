@@ -456,7 +456,7 @@ public interface ReadDependencyInt extends ReadValueInt, Dependency, ReadDepende
 	public default SealInt minus(int op2) {
 		return PileInt.subtractRO(this, op2);
 	}
-	/** Delegates to {@link PileInt#multiplyRO(ReadDependency, int)} */
+	/** Delegates to {@link PileInt#multiply(ReadDependency, int)} */
 	public default SealInt times(int op2) {
 		return PileInt.multiply(this, op2);
 	}

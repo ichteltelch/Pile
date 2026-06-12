@@ -22,7 +22,7 @@ public class CompoundTest {
 			do2.destroy();
 		}
 		@Override
-		public String autoCompundName() {
+		public String autoCompoundName() {
 			return "A dodo";
 		}
 		@Override

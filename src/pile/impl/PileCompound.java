@@ -60,7 +60,7 @@ public abstract class PileCompound {
 		
 		makeHead(ret, recompute, changed, validityChanged, parent);
 		
-		ret.avName=autoCompundName();
+		ret.avName=autoCompoundName();
 		return ret;
 	}
 	/**
@@ -103,7 +103,7 @@ public abstract class PileCompound {
 	/**
 	 * @return A name for this {@link PileCompound}
 	 */
-	abstract public String autoCompundName();
+	abstract public String autoCompoundName();
 	/**
 	 * Called when the default head is recomputed
 	 * @param head

@@ -207,7 +207,7 @@ public class Recomputations {
 	 * @throws NullPointerException If there is no current recomputation or it has been set to <code>null</code>
 	 * by calling {@link #withDependencyRecorder(DependencyRecorder)}.
 	 */
-	public static boolean isRecomputationfinished() {
+	public static boolean isRecomputationFinished() {
 		return getCurrentRecomputation().isFinished();
 	}
 	/**

@@ -6,21 +6,9 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 
 ## Open
 
-_All triaged — the only un-fixed items left are public-API **renames**, handled via the IDE's rename refactoring (it updates every cross-project reference atomically), not manual edits. See below._
+_Nothing open — every logged finding has been fixed, dismissed, or (the renames) completed by the developer in the IDE._
 
-## For IDE rename refactoring (developer)
-
-### PB-4 — garbled public method names `writableBufferDtSealableString` / `writableWeakBufferDtSealableString`
-- **Where:** `Piles.writableBufferDtSealableString` and `writableWeakBufferDtSealableString`.
-- **Symptom:** these `…String` twins carry a garbled `DtSealable` infix, inconsistent with every other `…String` twin (e.g. `writableBufferString` expected). Copy-paste/rename slip in a **public** API name.
-- **Resolution:** IDE rename → e.g. `writableBufferString` / `writableWeakBufferString` (breaking change; do via refactoring).
-
-### PB-10 — misspelled public API `autoCompundName`
-- **Where:** `src/pile/impl/PileCompound.java` (and every override across the compound/list family).
-- **Symptom:** the abstract method name is missing an 'o' (should be `autoCompoundName`); baked into the contract and all overrides.
-- **Resolution:** IDE rename `autoCompundName` → `autoCompoundName`. (Same for the leftover `Recomputations.isRecomputationfinished` → `isRecomputationFinished`, per the Minor note below.)
-
-> Minor (not logged as PB): `ReadDependencyInt.times(int)` javadoc says it delegates to a non-existent `PileInt#multiplyRO` (body correctly calls `PileInt.multiply`); stale `@link`. Noted in the `specialized_int` doc as a wart. The `Recomputations.isRecomputationfinished` misspelling (lowercase `f`) is likewise left as a wart (fixed the `static` defect, see PB-21, but didn't rename the public method).
+> Minor (resolved): `ReadDependencyInt.times(int)`'s stale `@link PileInt#multiplyRO` was corrected to `#multiply`; the `Recomputations.isRecomputationfinished` misspelling was renamed to `isRecomputationFinished` via the IDE.
 
 ## Fixed (pending verification — 2026-06-12)
 
@@ -172,6 +160,14 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 - **Where:** `SealPileBuilder.java`, `PileBuilder.java`.
 - **Fixed:** `SealPileBuilder` class javadoc "implementing the `IIndependentBuilder` interface" → `ISealPileBuilder`; `PileBuilder` constructor `@param value` → `@param v` (matches the parameter name).
 - **Not changed (flagged):** the `ISealPileBuilder` `setupBuffer`/`setupWeakBuffer` `setter.accept(value)` vs writable twins' `setter.set(value)` split — possibly intentional (read-only buffers don't need the corrected return value); left for review.
+
+### PB-4 — garbled public method names `writableBuffer/WeakBufferDtSealableString`
+- **Where:** `src/pile/impl/Piles.java`.
+- **Fixed (developer, IDE rename):** `writableBufferDtSealableString` → `writableBufferString`; `writableWeakBufferDtSealableString` → `writableWeakBufferString`.
+
+### PB-10 — misspelled public API `autoCompundName`
+- **Where:** `src/pile/impl/PileCompound.java` + the compound/list overrides.
+- **Fixed (developer, IDE rename):** `autoCompundName` → `autoCompoundName` (abstract method + all overrides + callers).
 
 ## Author-flagged uncertainties (in-source TODOs — not necessarily bugs)
 - **`ISealPileBuilder.setupWritableRateLimited`** — `src/pile/builder/ISealPileBuilder.java` carries the author's note *"Invalidating the buffer directly does not work yet"* (acknowledged-incomplete behavior).

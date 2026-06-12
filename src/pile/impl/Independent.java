@@ -251,7 +251,7 @@ HasInfluencers
 		try {
 			val = applyCorrection(val);
 		}catch(VetoException x) {
-			x.printStackTrace();
+			log.log(Level.WARNING, "Correction vetoed in set0", x);
 			return get();
 		}catch (RuntimeException x) {
 			log.log(Level.SEVERE, "Exception in applyCorrection", x);

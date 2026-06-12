@@ -6,12 +6,6 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 
 ## Open
 
-### PB-2 — `RunnableSoftReference extends WeakReference` (soft vs weak mismatch)
-- **Where:** the association / reference machinery around `pile.aspect.HasAssociations` (a class named `RunnableSoftReference`; confirm the exact location).
-- **Symptom:** a class named `RunnableSoftReference` extends `WeakReference`, not `SoftReference`. Soft and weak references have different GC semantics (soft survive until memory pressure; weak are cleared at the next GC).
-- **Confidence:** medium (could be deliberate naming). **Impact:** associations intended to be *softly* held may be cleared eagerly.
-- **Found:** `HasAssociations` doc.
-
 ### PB-3 (doc-only) — `LastValueRememberSuppressible._COLLECTION` javadoc names the wrong type
 - **Where:** `src/pile/aspect/LastValueRememberSuppressible.java` (the `_COLLECTION` method-handle constant).
 - **Symptom:** javadoc mis-names the element type as `AutoValidationSuppressible` (copy-paste); the generics are correct.
@@ -36,23 +30,11 @@ Maintenance: documentation subagents report a `SUSPECTED_BUGS` field; the orches
 - **Confidence:** high (it's dead code). **Impact:** none at runtime.
 - **Found:** `Piles` index.
 
-### PB-7 — `Independent.__beginTransaction(boolean)` ignores its argument
-- **Where:** `src/pile/impl/Independent.java`.
-- **Symptom:** `__beginTransaction(boolean b)` ignores `b` and always calls `super.beginTransaction(true)`. The `invalidate` flag is silently dropped.
-- **Confidence:** medium. **Impact:** likely nil in practice (an `Independent` has no invalidity), but the dead parameter suggests an unintended divergence from the `DoesTransactions` contract.
-- **Found:** `Independent` doc.
-
 ### PB-8 (cosmetic) — `Independent` logger name misspelled "Indepednent"
 - **Where:** `src/pile/impl/Independent.java`.
 - **Symptom:** the `Logger` is registered under the misspelled category name `"Indepednent"`.
 - **Confidence:** high (typo). **Impact:** none beyond an odd log-category name.
 - **Found:** `Independent` doc.
-
-### PB-9 — `Independent` ignores `VetoException.revalidate` (diverges from `PileImpl`)
-- **Where:** `src/pile/impl/Independent.java`.
-- **Symptom:** a vetoed correction in `set0` only `printStackTrace()`s and ignores `VetoException.revalidate`, whereas `PileImpl` honors it (re-validates). Documented as a caveat in `CorrigibleValue.md`.
-- **Confidence:** low (probably intentional — an `Independent` can't recompute). **Impact:** `revalidate=true` vetoes are no-ops on an `Independent`.
-- **Found:** `CorrigibleValue` + `Independent` docs.
 
 ### PB-10 — misspelled public API `autoCompundName`
 - **Where:** `src/pile/impl/PileCompound.java` (and every override across the compound/list family).
@@ -132,6 +114,11 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 - **Where:** `src/pile/aspect/combinations/ReadWriteListenValue.java`.
 - **Symptom:** the javadoc says it delegates to `writableValidBuffer_memo`, but the body called `readOnlyValidBuffer_memo` (inherited from the read-only parent), so `asDependency` on a writable value yielded a read-only memoized buffer.
 - **Fixed:** `validBuffer_memo()` now calls `writableValidBuffer_memo()` (matches the file-wide pattern of overriding read-only methods to their writable twin).
+
+### PB-2 — `RunnableSoftReference extends WeakReference` (soft policy acted weak)
+- **Where:** `src/pile/aspect/HasAssociations.java`, nested `ReferencePolicy.RunnableSoftReference`.
+- **Symptom:** the class — name *and* javadoc both say `SoftReference` — extended `WeakReference` (a copy-paste from the sibling `RunnableWeakReference`). The `SOFT` policy instantiates it whenever a `Runnable` cleanup is attached, so SOFT-with-cleanup held its referent **weakly** (cleared at the next GC) instead of softly (survives until memory pressure).
+- **Fixed:** `extends WeakReference<T>` → `extends SoftReference<T>` (same two constructors; `SoftReference` already imported and used by the `SOFT` policy).
 
 ### PB-21 — `Recomputations` forwarding helpers declared non-`static`
 - **Where:** `src/pile/aspect/recompute/Recomputations.java`.
@@ -221,4 +208,6 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 - **PB-17 (not a bug)** — `AbstractIndependentBuilder` ignoring `seal(.., allowInvalidation=true)`. **Not a bug:** `Independent`s silently ignore invalidation attempts anyway (no invalid state), so the flag is moot. (Developer, 2026-06-12.)
 - **PB-18 (not a bug)** — writable `field`/`deref` "dropping" a write when there is no inner value. **Not a bug:** silently ignoring an unsupported write is idiomatic in Pile (cf. `Constant`; a field with no inner value has nowhere to write). The inline `//TODO` is about a *different* concern — field↔inner-value sync (see author-flagged). (Developer, 2026-06-12.)
 - **PB-28 (dismissed — verified by reading, not a functional bug)** — `ReactiveSuppressionSwitcher.setSuppressed(ReadListenValue newState)` calling `super.setSuppressed(state)` (the inherited current state) rather than a boolean derived from `newState`. **Verified against `SuppressionSwitcher.setSuppressed(boolean)` (parent):** that method sets `state` *directly* and its main job is the side effect of clearing `suppressThese` + releasing all suppressors — which happens regardless of the boolean. The requested state is then (re)applied on the *next line* by `_setSuppressedState(newState, true)`, which runs the `updater` and pushes `isTrue(newState)` into `state`. Traced all old-state × new-state combinations (incl. the `newState == reactiveState` same-object early-return): final `state` and object-release are identical whether `state` or the derived `s` is passed. The collection overloads *must* pass the derived boolean (they suppress a specific collection immediately) — the no-collection overload doesn't. A clarifying comment was added in-source so it isn't re-flagged. (Verified by reading, 2026-06-12.)
+- **PB-7 (dismissed — verified by reading, not a bug)** — `Independent.__beginTransaction(boolean b)` "ignoring" its argument. **Verified:** the contract param is `invalidate`, but `super.beginTransaction(true)` resolves to `AbstractReadListenDependency.beginTransaction(boolean workInformQueue)` — a *different* boolean (whether to call `__workInformQueue()` afterwards). `Independent` legitimately ignores `invalidate` (it has no invalid state to enter, so the flag is moot) and correctly passes `workInformQueue=true` (the right default for a caller not holding `mutex`). Forwarding `b` here would be semantically wrong (conflating the two booleans). No change. (Verified by reading, 2026-06-12.)
+- **PB-9 (dismissed — confirmed by developer, not a bug)** — `Independent` ignoring `VetoException.revalidate` in `set0` (only `printStackTrace()` + `return get()`). **Independents can't revalidate** (developer-confirmed): `Independent.revalidate()` is an empty no-op, and an `Independent` is always valid / never recomputes, so honoring the `revalidate` flag would do nothing. The divergence from `PileImpl` is correct for a leaf value. (Residual wart **fixed** at developer's request: the veto `catch` now uses `log.log(Level.WARNING, …, x)` instead of `printStackTrace()`, matching the sibling `RuntimeException catch`.) (Developer-confirmed, 2026-06-12.)
 - **PB-37 (dismissed — verified by reading, not a bug)** — `AbstractRelation.installEnabledListener` calling `getListener().runImmediately()` (no-arg) where subclasses use `runImmediately(true)`. **Verified against `ValueListener.runImmediately`:** the boolean is `inThisThread` (run synchronously on the caller's thread vs. asynchronously via `StandardExecutors.unlimited()`) — **not** an "initial pass" toggle. Both overloads fire the listener with a `null` event, so the base path *does* re-assert the invariant on re-enable; it just runs it on another thread. The originally-feared "won't re-equalize until next operand change" does not hold. (Residual nuance, not a bug: the async re-assert is unordered relative to the enable; flag only if a future ordering issue surfaces.) (Verified by reading, 2026-06-12.)

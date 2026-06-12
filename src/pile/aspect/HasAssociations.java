@@ -141,7 +141,7 @@ public interface HasAssociations {
 		 *
 		 * @param <T>
 		 */
-		public static abstract class RunnableSoftReference<T> extends WeakReference<T> implements Runnable{
+		public static abstract class RunnableSoftReference<T> extends SoftReference<T> implements Runnable{
 
 			public RunnableSoftReference(T referent, ReferenceQueue<? super T> q) {
 				super(referent, q);

@@ -86,7 +86,7 @@ You may still **`set` a depender `D` while its dependency `X` is invalid** ("wri
 
 ## To verify with a characterization test (before treating as guaranteed)
 
-When `X` recomputes to a **genuinely different** value while `D` was manually `set` valid: the code paths (`changed` flag in `dependencyEndsChanging` vs. the valid-branch cancel in `__endTransaction`) indicate **`D` keeps its manual value**, but this is exactly the kind of ordering subtlety that deserves a golden test in `Biss_Pile/tests/` rather than reading alone. Until that test exists, treat step (2) above as "strongly indicated" rather than "contractually guaranteed".
+When `X` recomputes to a **genuinely different** value while `D` was manually `set` valid: the code paths (`changed` flag in `dependencyEndsChanging` vs. the valid-branch cancel in `__endTransaction`) indicate **`D` keeps its manual value**, but this is exactly the kind of ordering subtlety that deserves a golden test in `tests/` rather than reading alone. Until that test exists, treat step (2) above as "strongly indicated" rather than "contractually guaranteed".
 
 ## Related
 

@@ -24,7 +24,7 @@ Eight constructors: four take the `revalidate` flag explicitly together with the
 
 ## Who throws it (correctors)
 
-Correctors registered on a [`CorrigibleValue`](CorrigibleValue.md) throw it from `applyCorrection` to reject the candidate value. In practice these are wired up through the builders (`AbstractPileBuilder`, `AbstractIndependentBuilder`, `ICorrigibleBuilder`) and thrown by application code (e.g. Biss models reject out-of-range values).
+Correctors registered on a [`CorrigibleValue`](CorrigibleValue.md) throw it from `applyCorrection` to reject the candidate value. In practice these are wired up through the builders (`AbstractPileBuilder`, `AbstractIndependentBuilder`, `ICorrigibleBuilder`) and thrown by application code (e.g. models rejecting out-of-range values).
 
 ## Who handles it (the set path)
 

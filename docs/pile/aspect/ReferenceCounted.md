@@ -8,7 +8,7 @@ Up: [package index](_index.md) · [overview](../../overview.md). Related: [`supp
 
 ## What it's for
 
-A tiny aspect interface (4 members, no state) for objects whose lifetime is governed by an explicit, caller-managed reference count rather than by GC. Increment when you start using the object, decrement when you're done; reaching zero **may** trigger destruction of the object. It is *not* implemented by any value type inside the Pile library itself — Pile only *consumes* it (via `ValueBracket`, below). The implementors live in downstream application code (e.g. mesh/model resources in Biss).
+A tiny aspect interface (4 members, no state) for objects whose lifetime is governed by an explicit, caller-managed reference count rather than by GC. Increment when you start using the object, decrement when you're done; reaching zero **may** trigger destruction of the object. It is *not* implemented by any value type inside the Pile library itself — Pile only *consumes* it (via `ValueBracket`, below). The implementors live in downstream application code (e.g. mesh/model resources).
 
 ## Members by purpose
 

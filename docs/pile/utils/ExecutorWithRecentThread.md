@@ -25,7 +25,7 @@ It does **not** extend `Executor`/`ExecutorService` — the "executor" part is a
 The point of the abstraction is **thread affinity / identity checks**, not lifecycle management. A caller asks "is this the thread my work runs on?" to:
 
 - detect re-entrancy or decide whether it may run something inline vs. hand it off;
-- attribute liveness/health to the right worker (the Biss `HealthMonitor` uses it this way — it polls `getRecentThread()` to watch the worker).
+- attribute liveness/health to the right worker (e.g. a health monitor polls `getRecentThread()` to watch the worker).
 
 Because the implementor keeps the worker **warm for a short idle window** instead of tearing it down after each task, `getRecentThread()` usually still returns the same thread between bursts of work. That gives two benefits the name hints at: avoiding repeated thread spin-up, and preserving thread-affinity for related tasks submitted back-to-back.
 

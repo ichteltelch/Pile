@@ -72,7 +72,7 @@ Code changes applied (Tier A) but **not yet test-verified**. Reviewed via diff; 
 ### PB-33 — `SequentialQueue.isQueueWorkerThread` compared a `Thread` to a `Future`
 - **Where:** `src/pile/utils/SequentialQueue.java`, `isQueueWorkerThread()`.
 - **Symptom:** `Thread.currentThread() == queueWorkerFuture` (a `Future`) — compiles only because `Thread` isn't `final`; always false at runtime.
-- **Fixed:** compares `queueWorkerThread`. **Note (B1):** the only caller chain is `isDeferThread()` in `JSceneViewerImpl`/`MSceneViewerImpl`, which `find_references` shows is itself **uncalled** (dead code today) — so this fix has no current runtime impact on Biss; it just makes the method correct for when `isDeferThread()` is wired in.
+- **Fixed:** compares `queueWorkerThread`. **Note (B1):** the only caller chain is `isDeferThread()` (in downstream code), which `find_references` shows is itself **uncalled** (dead code today) — so this fix has no current runtime impact; it just makes the method correct for when `isDeferThread()` is wired in.
 
 ### PB-34 — `SequentialQueue.shutdownNow` NPE'd before the first `enqueue`
 - **Where:** `src/pile/utils/SequentialQueue.java`, `shutdownNow()`.

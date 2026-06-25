@@ -1,6 +1,6 @@
 # Pile — documentation overview
 
-Pile is a **reactive-values framework** (Java 8, no external dependencies): wrappers around plain values that can depend on one another and recompute when their dependencies change. It is developed by Promadent and used by *Biss* for its reactive model and GUI. Pile is open source.
+Pile is a **reactive-values framework** (Java 8, no external dependencies): wrappers around plain values that can depend on one another and recompute when their dependencies change. It is developed by Promadent and is open source.
 
 This file is the entry point. It describes the **source-folder layout**, the **package/architecture map**, and a **reading guide** pointing to the per-topic docs. Read it first, then jump to the specific doc for the area you are touching.
 
@@ -8,7 +8,7 @@ This file is the entry point. It describes the **source-folder layout**, the **p
 
 ## Source folders
 
-The Eclipse project (`Biss_Pile`) has four source folders on the build path (`.classpath`), plus one off-path variant. **Package paths alone do not tell you which source folder a file is in — these docs name the source folder whenever it is not `src`.**
+The Pile Eclipse project has four source folders on the build path (`.classpath`), plus one off-path variant. **Package paths alone do not tell you which source folder a file is in — these docs name the source folder whenever it is not `src`.**
 
 | Source folder | Role |
 |---|---|

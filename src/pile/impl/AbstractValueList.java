@@ -44,7 +44,7 @@ implements Iterable<E>{
 	String name;
 
 	@Override
-	public String autoCompundName() {
+	public String autoCompoundName() {
 		return name==null?"A list":name;
 	}
 	/**

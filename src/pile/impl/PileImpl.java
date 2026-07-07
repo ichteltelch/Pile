@@ -2281,8 +2281,8 @@ implements Pile<E>, HasAssociations.Mixin
 			if(recompute!=null && recompute.useDependencyScouting()) {
 				synchronized (mutex) {
 					closeOldBrackets();
-					oldValue = val;
-					openOldBrackets();
+//					oldValue = val;
+//					openOldBrackets();
 				}
 				__scheduleRecomputation(false, true);
 				__startPendingRecompute(false, true);
